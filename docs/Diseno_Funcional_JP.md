@@ -69,16 +69,16 @@ Clientes, Créditos, Usuarios. Middleware `EnsureRole` bloquea el acceso (RNF-00
 
 ---
 
-## 3. Decisiones funcionales abiertas (requieren confirmación)
+## 3. Decisiones funcionales (CONFIRMADAS)
 
-Los requisitos no son explícitos en estos puntos. Recomendación entre corchetes.
+Los requisitos no eran explícitos en estos puntos; resueltos con el usuario en Fase 2.
 
-| # | Pregunta | Recomendación |
-|---|----------|---------------|
-| **G1** | ¿Puede el Empleado registrar ventas a **crédito** / usar **saldo a favor** / elegir un **cliente**? | El Empleado **puede seleccionar un cliente existente** y registrar venta a crédito (sujeta al bloqueo por mora, que él no puede saltar) y aplicar saldo a favor. **No puede crear ni editar clientes** — eso queda en el módulo Clientes del Administrador. |
-| **G2** | ¿Puede el Empleado **anular** una venta? | Sí, pero **solo ventas registradas por él y aún no entregadas**. El Administrador puede anular cualquiera. |
-| **G3** | ¿Puede el Empleado marcar una venta como **entregada**? | Sí. La entrega es una acción operativa del punto de venta, no administrativa. |
-| **G4** | ¿Existe un **descuento máximo** que el Empleado puede aplicar sin autorización? | Pendiente de negocio (Requisitos §12). **MVP: sin límite**, se registra el precio real tal cual. Si el negocio define un tope, se añade una validación. |
+| # | Pregunta | Decisión |
+|---|----------|----------|
+| **G1** | ¿Puede el Empleado registrar ventas a **crédito** / usar **saldo a favor** / elegir un **cliente**? | **Sí:** puede seleccionar un cliente existente, registrar venta a crédito (sujeta al bloqueo por mora, que él no puede saltar) y aplicar saldo a favor. **No puede crear ni editar clientes** — eso queda en el módulo Clientes del Administrador. |
+| **G2** | ¿Puede el Empleado **anular** una venta? | **Sí, pero solo ventas registradas por él y aún no entregadas.** El Administrador puede anular cualquiera. |
+| **G3** | ¿Puede el Empleado marcar una venta como **entregada**? | **Sí.** La entrega es una acción operativa del punto de venta, no administrativa. |
+| **G4** | ¿Existe un **descuento máximo** que el Empleado puede aplicar sin autorización? | **MVP: sin límite**, se registra el precio real tal cual. Pendiente de negocio (Requisitos §12): si el negocio define un tope, se añade una validación. |
 
 ---
 
