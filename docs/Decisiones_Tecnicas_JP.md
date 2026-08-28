@@ -10,7 +10,9 @@
 > Estado de los bloques:
 > - Bloque A · Modelo de dominio — **CERRADO**
 > - Bloque B · Integridad — **CERRADO** (queda como tarea de implementación el índice UNIQUE de B2)
-> - Bloque C · Dinero del cliente — pendiente
+> - Bloque C · Dinero del cliente — **CERRADO**
+>
+> Siguiente entregable de Fase 3: diagrama Entidad‑Relación completo.
 
 ---
 
@@ -196,3 +198,117 @@ lectura rápida, actualizado en la misma transacción, y siempre igual al últim
 **RN‑15:** los ajustes manuales **sí** generan un movimiento de inventario (consistencia del
 ledger), pero **no** almacenan información que permita identificar al usuario que lo realizó
 (`usuario_id = NULL` para `tipo = ajuste`).
+
+---
+
+## Bloque C — Dinero del cliente
+
+### C1. Saldo a favor
+
+**Arquitectura:** libro (ledger) + saldo cacheado, igual que el inventario.
+
+| Elemento | Rol |
+|----------|-----|
+| `saldo_favor_movimientos` | `cliente_id`, `tipo` (`generado` \| `aplicado`), `monto` (con signo), `referencia_type` + `referencia_id` (→ devolución o venta), `created_at`. Fuente de auditoría. |
+| `clientes.saldo_favor` (decimal) | Lectura rápida. Siempre igual a la suma del libro. |
+
+Ambos se actualizan **en la misma transacción**.
+
+**Reglas:**
+
+- El saldo a favor **nunca** se devuelve en efectivo (RN‑11).
+- Se puede usar en compras posteriores (RF‑012).
+- **MVP: sin vencimiento.**
+- **MVP: se puede combinar con una compra a crédito.**
+
+**Modelo de pago de una venta** (mínimo, sin tabla de pagos partidos):
+
+```
+total_a_pagar  =  subtotal − descuento
+      │
+      ├── saldo_favor_aplicado        (opcional, cubierto con saldo a favor)
+      │
+      └── restante                    (cubierto con UN metodo_pago)
+             ├── efectivo
+             ├── transferencia
+             └── credito  → genera deuda (ver C2)
+```
+
+- `ventas.metodo_pago` enum (`efectivo` \| `transferencia` \| `credito`) — un solo método (RF‑008).
+- `ventas.saldo_favor_aplicado` decimal, default 0.
+
+**Validaciones (todas dentro de la transacción, con el cliente bloqueado):**
+
+- `saldo_favor_aplicado >= 0`
+- `saldo_favor_aplicado <= clientes.saldo_favor` (saldo disponible en ese momento)
+- `saldo_favor_aplicado <= total_a_pagar` (RN‑12: si el producto excede el saldo, el cliente
+  completa la diferencia; nunca al revés)
+- `clientes.saldo_favor` no puede quedar negativo.
+
+**Regla técnica de concurrencia (alineada con B1):** toda operación que modifique
+`clientes.saldo_favor` debe ejecutarse dentro de una transacción y **bloquear la fila del
+cliente** (`lockForUpdate()`), para evitar que dos ventas concurrentes usen simultáneamente
+el mismo saldo disponible. Secuencia obligatoria cuando se usa saldo:
+
+```
+bloquear cliente → leer saldo actual → validar → descontar
+→ registrar movimiento en el libro → confirmar venta → COMMIT
+```
+
+**Alternativa descartada para el MVP:** tabla `venta_pagos` con múltiples renglones (pagos
+partidos efectivo + transferencia + …). Los requisitos no piden pagos partidos. Migrable
+después sin romper el modelo.
+
+### C2. Integridad de las operaciones de crédito
+
+**Modelo: una deuda por venta** (no una cuenta corriente global). Permite responder
+directamente a RN‑09: *¿existe alguna venta a crédito pendiente con antigüedad > 15 días?*
+
+| Campo en `ventas` (cuando `metodo_pago = credito`) | Notas |
+|---|---|
+| `credito_monto` | total puesto a crédito (= `restante` tras descuento y saldo a favor) |
+| `credito_saldo_pendiente` | decimal; baja con cada abono; 0 = pagada |
+| `fecha_venta` | base del cálculo de mora |
+| `credito_autorizado_por` | `usuario_id` nullable — solo se llena si un Administrador forzó la venta pese a mora |
+
+#### `abonos`
+
+| Campo | Notas |
+|-------|-------|
+| `venta_id` | la venta a crédito a la que pertenece el abono |
+| `monto` | decimal |
+| `fecha` | date (RF‑014) |
+| `usuario_id` | quién registró el abono |
+| `created_at` | |
+
+Al registrar un abono: transacción, bloqueo de la fila `ventas`, validar
+`monto <= credito_saldo_pendiente` (sin sobrepago), descontar, insertar.
+
+Beneficios del modelo por venta: abonos parciales; se sabe exactamente qué deuda se está
+pagando y cuándo; se impide el sobrepago; es trivial listar las ventas aún pendientes.
+
+#### Regla de mora (RN‑09 / RF‑015)
+
+```
+cliente_en_mora  =  existe alguna venta del cliente con
+                    metodo_pago = credito
+                    AND credito_saldo_pendiente > 0
+                    AND (hoy − fecha_venta) > 15 días
+```
+
+| Situación | Empleado | Administrador |
+|-----------|:--------:|:-------------:|
+| Cliente sin mora | ✅ | ✅ |
+| Cliente en mora | ❌ | ✅ (puede autorizar) |
+| Registro de la autorización | — | `credito_autorizado_por` |
+
+- El chequeo de mora se hace **antes de confirmar** una nueva venta a crédito y **dentro de
+  la misma transacción** de confirmación.
+- El Empleado nunca puede forzar una venta a crédito a un cliente en mora.
+
+**Pendiente de negocio (Requisitos §12):** no hay `fecha_vencimiento` / plazo formal
+definido. Se cuentan los 15 días desde `fecha_venta`. Cuando el negocio defina un plazo, se
+añade `fecha_vencimiento` nullable y cambia solo la condición de mora.
+
+**Fuera de alcance:** RF‑024 (límite máximo de crédito) es V2. No se modela; la estructura no
+impide añadirlo después.
