@@ -1,18 +1,17 @@
 # Decisiones Técnicas — Sistema JP (Fase 3)
 
-**Versión 0.1 (en construcción)** — Agosto de 2026
+**Versión 1.0** — Agosto de 2026
 
 > Documento de la Fase 3 del plan de proyecto. Registra las decisiones técnicas críticas
 > que, según `CLAUDE.md`, deben quedar documentadas **antes** de implementar los módulos
-> correspondientes. El diagrama Entidad‑Relación completo se consolida al final, una vez
-> cerradas todas las decisiones.
+> correspondientes.
 >
 > Estado de los bloques:
 > - Bloque A · Modelo de dominio — **CERRADO**
 > - Bloque B · Integridad — **CERRADO** (queda como tarea de implementación el índice UNIQUE de B2)
 > - Bloque C · Dinero del cliente — **CERRADO**
->
-> Siguiente entregable de Fase 3: diagrama Entidad‑Relación completo.
+> - Bloque E · Esqueleto de entidades + decisiones E1–E3 — **CERRADO**
+> - Diagrama Entidad‑Relación — **incluido** (sección final)
 
 ---
 
@@ -312,3 +311,311 @@ añade `fecha_vencimiento` nullable y cambia solo la condición de mora.
 
 **Fuera de alcance:** RF‑024 (límite máximo de crédito) es V2. No se modela; la estructura no
 impide añadirlo después.
+
+---
+
+## Bloque E — Esqueleto de entidades y decisiones E1–E3
+
+Traducción de las decisiones A/B/C a tablas, más las entidades que faltaban para el ER.
+
+### E1. `ventas.cliente_id` es nullable
+
+- Venta de **contado** → cliente opcional.
+- Venta a **crédito** → `cliente_id` **obligatorio**.
+- Venta que **aplica saldo a favor** → `cliente_id` **obligatorio**.
+
+La validación es parte de la confirmación de la venta (misma transacción).
+
+### E2. Descuento de línea
+
+Se guarda `venta_lineas.descuento_porcentaje` (nullable, 0–100) **y** el
+`venta_lineas.importe_linea` ya resuelto y persistido.
+
+- RF‑008 trabaja con porcentaje → se conserva exactamente qué descuento se aplicó.
+- `importe_linea` es un snapshot histórico: cambios posteriores de precios o reglas no
+  alteran reportes de ventas anteriores.
+- **El cálculo usa aritmética decimal, nunca `float`.**
+
+```
+importe_linea = round( precio_unitario * cantidad * (1 - descuento_porcentaje/100) , 2 )
+```
+
+### E3. Reintegro de devolución — flag por línea
+
+```
+Devolución
+   └─ el Administrador la valida
+        └─ cada devolucion_linea:
+             ├─ reintegra_inventario = true  → movimiento_inventario (tipo devolucion, +cantidad)
+             └─ reintegra_inventario = false → el stock no cambia
+```
+
+Representa RN‑11 ("reintegro cuando corresponda") y RN‑13 (el Administrador decide sobre
+producto dañado). No se asume que todo lo devuelto vuelve al inventario.
+
+### Tipos monetarios (propuesta de precisión)
+
+| Uso | Tipo |
+|-----|------|
+| Importes (precios, totales, abonos, saldo a favor) | `decimal(12, 2)` |
+| Costos unitarios (`costo_promedio`, `costo_unitario`, `costo_unitario_snapshot`) | `decimal(12, 4)` — más resolución para amortiguar el redondeo del promedio ponderado |
+
+Nunca `float`. Los cálculos se hacen con aritmética decimal (BCMath / castings `decimal` de
+Eloquent).
+
+### Tablas del sistema
+
+**Autenticación**
+- `users` (tabla de Laravel, extendida): `name`, `email`, `password`, `rol` enum
+  (`administrador` | `empleado`). Sin tabla `roles` ni paquete de permisos: 2 roles fijos +
+  middleware.
+
+**Catálogo**
+- `categorias`: `nombre`, `prefijo_codigo`, soft-delete.
+- `productos`: `nombre`, `marca`, `categoria_id`, `codigo_interno`, `precio_referencia`,
+  `foto`, `umbral_stock_bajo`, `proveedor` (string nullable), soft-delete.
+- `variantes`: `producto_id`, `talla`, `color`, `codigo` (nullable), `stock`,
+  `costo_promedio`, soft-delete. Unicidad `(producto_id, talla, color)` entre registros
+  activos.
+- `producto_historial`: `producto_id`, `usuario_id`, `campo`, `valor_anterior`,
+  `valor_nuevo`, `created_at`.
+
+**Inventario**
+- `entradas_inventario`: `variante_id`, `cantidad`, `costo_unitario`, `fecha`, `usuario_id`,
+  `proveedor` (nullable).
+- `ajustes_inventario`: `variante_id`, `cantidad_anterior`, `cantidad_nueva`, `motivo`
+  (nullable), `created_at`. **Sin `usuario_id`** (RN‑15).
+- `movimientos_inventario`: `variante_id`, `tipo` (`entrada`|`venta`|`anulacion`|
+  `devolucion`|`ajuste`), `cantidad` (con signo), `stock_resultante`,
+  `referencia_type`+`referencia_id` (polimórfico), `usuario_id` (nullable), `created_at`.
+
+**Clientes y dinero del cliente**
+- `clientes`: `nombre`, `telefono`, `cedula` (nullable), `saldo_favor` (cacheado),
+  soft-delete.
+- `saldo_favor_movimientos`: `cliente_id`, `tipo` (`generado`|`aplicado`), `monto` (con
+  signo), `referencia_type`+`referencia_id` (polimórfico → devolución o venta), `created_at`.
+- `abonos`: `venta_id`, `monto`, `fecha`, `usuario_id`, `created_at`.
+
+**Ventas**
+- `ventas`: `numero`, `cliente_id` (nullable, ver E1), `usuario_id` (RN‑08), `fecha_venta`,
+  `subtotal`, `descuento_total`, `total`, `saldo_favor_aplicado`, `metodo_pago` enum
+  (`efectivo`|`transferencia`|`credito`), `estado` enum (`confirmada`|`anulada`),
+  `entregada_at` (nullable), `anulada_at` / `anulada_por` / `motivo_anulacion` (nullable),
+  `credito_monto` / `credito_saldo_pendiente` / `credito_autorizado_por` (nullable).
+- `venta_lineas`: `venta_id`, `variante_id`, `cantidad`, `precio_unitario` (precio real,
+  RN‑03), `descuento_porcentaje` (nullable), `costo_unitario_snapshot`, `importe_linea`
+  (derivado y persistido).
+- `devoluciones`: `venta_id`, `fecha`, `estado` enum (`validada`|`rechazada`), `motivo`,
+  `saldo_generado`, `usuario_id`, `created_at`.
+- `devolucion_lineas`: `devolucion_id`, `venta_linea_id`, `cantidad`, `reintegra_inventario`
+  (bool), `valor_unitario`.
+
+**Regla de anulación vs. devolución:** si `ventas.entregada_at IS NULL` → se puede **anular**
+(reintegra stock automáticamente, `estado = anulada`). Si ya tiene fecha de entrega → solo
+**devolución** por el proceso de `devoluciones`.
+
+---
+
+## Diagrama Entidad‑Relación
+
+> Relaciones polimórficas (`movimientos_inventario`, `saldo_favor_movimientos`) se muestran
+> como notas, no como claves foráneas duras. Columnas de auditoría estándar de Laravel
+> (`created_at`, `updated_at`, `deleted_at`) se omiten salvo donde son semánticamente
+> relevantes.
+
+```mermaid
+erDiagram
+    users ||--o{ ventas : registra
+    users ||--o{ entradas_inventario : registra
+    users ||--o{ abonos : registra
+    users ||--o{ producto_historial : genera
+    users ||--o{ devoluciones : valida
+
+    categorias ||--o{ productos : clasifica
+    productos  ||--o{ variantes : tiene
+    productos  ||--o{ producto_historial : audita
+
+    variantes ||--o{ entradas_inventario : recibe
+    variantes ||--o{ ajustes_inventario : ajusta
+    variantes ||--o{ movimientos_inventario : mueve
+    variantes ||--o{ venta_lineas : vende
+
+    clientes ||--o{ ventas : compra
+    clientes ||--o{ saldo_favor_movimientos : acumula
+
+    ventas ||--o{ venta_lineas : contiene
+    ventas ||--o{ abonos : recibe
+    ventas ||--o{ devoluciones : origina
+
+    devoluciones  ||--o{ devolucion_lineas : detalla
+    venta_lineas  ||--o{ devolucion_lineas : referencia
+
+    users {
+        id bigint PK
+        string name
+        string email UK
+        string password
+        enum rol "administrador|empleado"
+    }
+
+    categorias {
+        id bigint PK
+        string nombre
+        string prefijo_codigo
+        timestamp deleted_at "nullable"
+    }
+
+    productos {
+        id bigint PK
+        bigint categoria_id FK
+        string nombre
+        string marca
+        string codigo_interno UK "entre activos"
+        decimal precio_referencia "12,2"
+        string foto "nullable"
+        int umbral_stock_bajo
+        string proveedor "nullable"
+        timestamp deleted_at "nullable"
+    }
+
+    variantes {
+        id bigint PK
+        bigint producto_id FK
+        string talla
+        string color
+        string codigo "nullable"
+        int stock
+        decimal costo_promedio "12,4"
+        timestamp deleted_at "nullable"
+    }
+
+    producto_historial {
+        id bigint PK
+        bigint producto_id FK
+        bigint usuario_id FK
+        string campo
+        text valor_anterior "nullable"
+        text valor_nuevo "nullable"
+        timestamp created_at
+    }
+
+    entradas_inventario {
+        id bigint PK
+        bigint variante_id FK
+        bigint usuario_id FK
+        int cantidad
+        decimal costo_unitario "12,4"
+        date fecha
+        string proveedor "nullable"
+    }
+
+    ajustes_inventario {
+        id bigint PK
+        bigint variante_id FK
+        int cantidad_anterior
+        int cantidad_nueva
+        string motivo "nullable"
+        timestamp created_at
+    }
+
+    movimientos_inventario {
+        id bigint PK
+        bigint variante_id FK
+        enum tipo "entrada|venta|anulacion|devolucion|ajuste"
+        int cantidad "con signo"
+        int stock_resultante
+        string referencia_type "polimorfico"
+        bigint referencia_id "polimorfico"
+        bigint usuario_id "nullable (NULL si ajuste, RN-15)"
+        timestamp created_at
+    }
+
+    clientes {
+        id bigint PK
+        string nombre
+        string telefono "nullable"
+        string cedula "nullable"
+        decimal saldo_favor "12,2 - cacheado"
+        timestamp deleted_at "nullable"
+    }
+
+    saldo_favor_movimientos {
+        id bigint PK
+        bigint cliente_id FK
+        enum tipo "generado|aplicado"
+        decimal monto "12,2 con signo"
+        string referencia_type "polimorfico"
+        bigint referencia_id "polimorfico"
+        timestamp created_at
+    }
+
+    ventas {
+        id bigint PK
+        string numero UK
+        bigint cliente_id FK "nullable (E1)"
+        bigint usuario_id FK "RN-08"
+        datetime fecha_venta
+        decimal subtotal "12,2"
+        decimal descuento_total "12,2"
+        decimal total "12,2"
+        decimal saldo_favor_aplicado "12,2 default 0"
+        enum metodo_pago "efectivo|transferencia|credito"
+        enum estado "confirmada|anulada"
+        datetime entregada_at "nullable"
+        datetime anulada_at "nullable"
+        bigint anulada_por "nullable"
+        string motivo_anulacion "nullable"
+        decimal credito_monto "12,2 nullable"
+        decimal credito_saldo_pendiente "12,2 nullable"
+        bigint credito_autorizado_por "nullable (override mora)"
+    }
+
+    venta_lineas {
+        id bigint PK
+        bigint venta_id FK
+        bigint variante_id FK
+        int cantidad
+        decimal precio_unitario "12,2 - precio real RN-03"
+        decimal descuento_porcentaje "5,2 nullable"
+        decimal costo_unitario_snapshot "12,4 - A2"
+        decimal importe_linea "12,2 - persistido E2"
+    }
+
+    devoluciones {
+        id bigint PK
+        bigint venta_id FK
+        bigint usuario_id FK
+        date fecha
+        enum estado "validada|rechazada"
+        string motivo
+        decimal saldo_generado "12,2"
+        timestamp created_at
+    }
+
+    devolucion_lineas {
+        id bigint PK
+        bigint devolucion_id FK
+        bigint venta_linea_id FK
+        int cantidad
+        boolean reintegra_inventario
+        decimal valor_unitario "12,2"
+    }
+```
+
+### Notas sobre relaciones polimórficas
+
+- `movimientos_inventario.referencia` apunta a `entradas_inventario`, `ventas` o
+  `ajustes_inventario` según `tipo`.
+- `saldo_favor_movimientos.referencia` apunta a `devoluciones` (cuando `tipo = generado`) o a
+  `ventas` (cuando `tipo = aplicado`).
+
+### Invariantes que el código debe garantizar (resumen)
+
+| Invariante | Dónde se protege |
+|-----------|------------------|
+| `variantes.stock` = último `movimientos_inventario.stock_resultante` de esa variante | Transacción de cada operación de stock (B1) |
+| `variantes.stock >= 0` siempre | UPDATE condicional + validación (B1) |
+| `clientes.saldo_favor` = Σ `saldo_favor_movimientos.monto` del cliente y `>= 0` | Transacción con cliente bloqueado (C1) |
+| `ventas.credito_saldo_pendiente` = `credito_monto` − Σ `abonos.monto` | Transacción con venta bloqueada (C2) |
+| `venta_lineas.costo_unitario_snapshot` no cambia tras confirmar la venta | Inmutable por diseño (A2) |
+| Anulación solo si `ventas.entregada_at IS NULL` | Validación de la operación de anulación (E) |
