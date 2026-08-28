@@ -39,7 +39,8 @@ La solución está orientada a:
 - Laravel.
 - MySQL.
 - Blade.
-- Bootstrap o Tailwind, decisión que se tomará durante el diseño funcional.
+- Tailwind CSS v4 (decidido en Fase 3; ver `docs/Decisiones_Tecnicas_JP.md` §F2).
+- Laravel Breeze (stack Blade) como scaffolding de autenticación, sin registro público.
 - Git.
 - GitHub.
 - PHPUnit / feature tests.
@@ -69,8 +70,10 @@ Estas decisiones deben considerarse como establecidas salvo que el usuario las c
 - No se administrará Linux directamente.
 - Laravel será el framework principal.
 - MySQL será la base de datos.
-- Blade será utilizado para el frontend del MVP.
+- Blade será utilizado para el frontend del MVP, con Tailwind CSS v4.
+- La autenticación se genera con Laravel Breeze (stack Blade); el registro público se elimina y los usuarios los crea el Administrador.
 - La arquitectura será inicialmente MVC estándar de Laravel.
+- Las decisiones técnicas de la Fase 3 están consolidadas en `docs/Decisiones_Tecnicas_JP.md` (costeo promedio ponderado móvil, soft-delete, dos ledgers, saldo a favor, crédito por venta, etc.).
 - No se construirá una API REST en el MVP.
 - No se utilizará Docker.
 - El inventario será un stock único y global, sin gestión de inventario por ubicación.

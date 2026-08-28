@@ -8,10 +8,11 @@
 >
 > Estado de los bloques:
 > - Bloque A · Modelo de dominio — **CERRADO**
-> - Bloque B · Integridad — **CERRADO** (queda como tarea de implementación el índice UNIQUE de B2)
+> - Bloque B · Integridad — **CERRADO**
 > - Bloque C · Dinero del cliente — **CERRADO**
 > - Bloque E · Esqueleto de entidades + decisiones E1–E3 — **CERRADO**
-> - Diagrama Entidad‑Relación — **incluido** (sección final)
+> - Bloque F · Decisiones de implementación (índice UNIQUE, stack frontend) — **CERRADO**
+> - Diagrama Entidad‑Relación — **incluido**
 
 ---
 
@@ -413,6 +414,46 @@ Eloquent).
 **Regla de anulación vs. devolución:** si `ventas.entregada_at IS NULL` → se puede **anular**
 (reintegra stock automáticamente, `estado = anulada`). Si ya tiene fecha de entrega → solo
 **devolución** por el proceso de `devoluciones`.
+
+---
+
+## Bloque F — Decisiones de implementación
+
+### F1. Índice UNIQUE compatible con soft-delete (resuelve B2)
+
+MySQL 8 no tiene índices parciales, y `unique(codigo, deleted_at)` **no** previene duplicados
+activos (MySQL permite varios `NULL` en un índice único).
+
+**Decisión: columna generada `activo`.** Vale `1` si el registro está activo, `NULL` si está
+soft-deleted. El índice único incluye esa columna.
+
+```php
+// productos (después de $table->softDeletes())
+$table->unsignedTinyInteger('activo')
+      ->storedAs('IF(deleted_at IS NULL, 1, NULL)')
+      ->nullable();
+$table->unique(['codigo_interno', 'activo']);
+
+// variantes
+$table->unique(['producto_id', 'talla', 'color', 'activo']);
+```
+
+- Dos registros activos con el mismo código → `(COD, 1)` + `(COD, 1)` → viola el índice.
+- Registros borrados → `(COD, NULL)` → MySQL los permite (NULLs distintos): un código de un
+  producto eliminado puede reutilizarse.
+
+Además, en el Form Request correspondiente:
+`Rule::unique('productos', 'codigo_interno')->whereNull('deleted_at')` para un mensaje de
+error amable antes de llegar a la BD (la BD es la red de seguridad, no la primera línea).
+
+### F2. Stack de frontend
+
+| Decisión | Elección |
+|----------|----------|
+| Framework CSS | **Tailwind CSS v4** con Blade. Componentes Blade propios (`<x-input>`, `<x-button>`, `<x-card>`, `<x-table>`). Sin kit de componentes externo. |
+| Scaffolding de autenticación | **Laravel Breeze**, stack Blade. Es scaffolding (el código generado queda en el repo y es nuestro), no una capa runtime. |
+| Registro público | **Deshabilitado.** Los usuarios los crea el Administrador (RF‑002). Se eliminan las rutas/vistas de registro que genera Breeze. |
+| Roles | Columna `users.rol` enum (`administrador` | `empleado`) + middleware `EnsureRole`. Sin tabla `roles` ni paquete de permisos. |
 
 ---
 
