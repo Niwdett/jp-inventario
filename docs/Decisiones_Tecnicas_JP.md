@@ -9,7 +9,7 @@
 >
 > Estado de los bloques:
 > - Bloque A · Modelo de dominio — **CERRADO**
-> - Bloque B · Integridad — pendiente
+> - Bloque B · Integridad — **CERRADO** (queda como tarea de implementación el índice UNIQUE de B2)
 > - Bloque C · Dinero del cliente — pendiente
 
 ---
@@ -116,3 +116,83 @@ tiene casos especiales.
 | A3.2 | ¿`categoria` como string o tabla? | **Tabla `categorias`**: son pocas y estables, y el `codigo_interno` deriva un prefijo de la categoría. |
 | A3.3 | ¿`stock` en `variantes` o tabla `inventario` aparte? | **Columna en `variantes`**. El stock es global (RN‑01); una tabla aparte solo tendría sentido con múltiples ubicaciones (fuera de alcance). |
 | A3.4 | ¿Libro `movimientos_inventario`? | **Sí**, pero el diseño se define en el Bloque B (historial + concurrencia). `variantes.stock` será un valor derivado auditable, no la única fuente de verdad. |
+
+---
+
+## Bloque B — Integridad
+
+### B1. Concurrencia / evitar sobreventa
+
+**Decisión:** el sistema usará **transacciones de base de datos** y **bloqueo pesimista**
+(`->lockForUpdate()`) para proteger las variantes involucradas en operaciones críticas de
+inventario. Las actualizaciones de stock tendrán **además** una condición de seguridad que
+impida que el stock resulte negativo (UPDATE atómico condicional, `... WHERE stock >= :n`).
+
+**Alcance de la transacción al confirmar una venta** (todo o nada):
+
+1. `BEGIN`
+2. Bloquear las filas de las variantes involucradas, ordenadas por `id` (previene deadlocks).
+3. Validar `stock >= cantidad` en cada línea.
+4. Si el pago es a crédito → validar mora del cliente (RN‑09).
+5. Insertar `venta` + `venta_lineas` con `costo_unitario_snapshot` (ver A2).
+6. Descontar `stock` + insertar filas en `movimientos_inventario`.
+7. Si crédito → registrar la deuda; si se aplica saldo a favor → descontarlo.
+8. `COMMIT`.
+
+El **mismo patrón** (transacción + bloqueo + guarda de no-negativo) aplica a: anulación,
+devolución, ajuste manual de inventario y entrada de mercancía.
+
+**Reglas cubiertas:** RNF‑004, RNF‑005; resuelve el pendiente de Requisitos §12 sobre
+sobreventa simultánea.
+
+### B2. Soft-delete de registros con historial
+
+| Entidad | Estrategia |
+|---------|-----------|
+| `productos`, `variantes`, `clientes` | `SoftDeletes` de Laravel — **siempre**, sin lógica condicional "¿tiene ventas?" |
+| `ventas` | **Nunca se eliminan físicamente.** Anulación y devolución son cambios de estado. |
+| `categorias` | Soft-delete, y **no se pueden eliminar mientras tengan productos activos**. |
+
+**Índices únicos:** la unicidad (`productos.codigo_interno`, `variantes(producto_id, talla,
+color)`) debe garantizarse **solo entre registros activos**, permitiendo reutilizar el código
+de un registro eliminado. La resolución concreta (índice parcial emulado en MySQL, p. ej.
+incluir una columna generada a partir de `deleted_at`, o `unique` sobre
+`(codigo_interno, deleted_at)`) queda como **tarea de implementación / diseño de BD**, no es
+una decisión de negocio.
+
+### B3. Estructura del historial — dos libros independientes
+
+CLAUDE.md exige separar el historial de modificaciones de producto del historial de ventas.
+
+#### B3a · `producto_historial` (RF‑016)
+
+Registro de la creación y de cada cambio en la información de un producto.
+
+| Campo | Notas |
+|-------|-------|
+| `producto_id`, `usuario_id` | quién hizo el cambio |
+| `campo`, `valor_anterior`, `valor_nuevo` | una fila por campo modificado |
+| `created_at` | cuándo |
+
+Se llena con un **Observer de Eloquent** sobre el modelo `Producto` (evento `updated`). Sin
+paquetes externos.
+
+#### B3b · `movimientos_inventario`
+
+Libro de **todo** cambio de stock. Fuente de auditoría; `variantes.stock` es el valor de
+lectura rápida, actualizado en la misma transacción, y siempre igual al último
+`stock_resultante`.
+
+| Campo | Notas |
+|-------|-------|
+| `variante_id` | |
+| `tipo` | `entrada` \| `venta` \| `anulacion` \| `devolucion` \| `ajuste` |
+| `cantidad` | con signo (+ entra / − sale) |
+| `stock_resultante` | stock después del movimiento |
+| `referencia_type` + `referencia_id` | polimórfico → entrada, venta o ajuste que lo originó |
+| `usuario_id` | nullable |
+| `created_at` | |
+
+**RN‑15:** los ajustes manuales **sí** generan un movimiento de inventario (consistencia del
+ledger), pero **no** almacenan información que permita identificar al usuario que lo realizó
+(`usuario_id = NULL` para `tipo = ajuste`).
