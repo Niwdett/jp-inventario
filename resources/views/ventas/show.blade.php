@@ -1,0 +1,114 @@
+<x-app-layout>
+    <x-slot name="header">
+        <div class="flex items-center justify-between">
+            <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+                {{ __('Venta') }} <span class="font-mono text-gray-500">{{ $venta->numero }}</span>
+                @if ($venta->estado === \App\Enums\EstadoVenta::Anulada)
+                    <span class="ms-2 inline-flex px-2 py-0.5 rounded-full bg-red-100 text-red-800 text-xs align-middle">{{ __('Anulada') }}</span>
+                @elseif ($venta->entregada_at)
+                    <span class="ms-2 inline-flex px-2 py-0.5 rounded-full bg-green-100 text-green-800 text-xs align-middle">{{ __('Entregada') }}</span>
+                @endif
+            </h2>
+            <a href="{{ route('ventas.index') }}" class="text-sm text-gray-600 hover:text-gray-900 underline">{{ __('← Volver') }}</a>
+        </div>
+    </x-slot>
+
+    <div class="py-12">
+        <div class="max-w-4xl mx-auto sm:px-6 lg:px-8 space-y-6">
+
+            @if (session('status'))
+                <div class="bg-green-50 border border-green-200 text-green-800 rounded-md p-4">{{ session('status') }}</div>
+            @endif
+            @if (session('error'))
+                <div class="bg-red-50 border border-red-200 text-red-800 rounded-md p-4">{{ session('error') }}</div>
+            @endif
+
+            <div class="bg-white shadow sm:rounded-lg p-6">
+                <dl class="grid grid-cols-2 sm:grid-cols-3 gap-x-8 gap-y-2 text-sm">
+                    <dt class="text-gray-500">{{ __('Fecha') }}</dt><dd class="sm:col-span-2">{{ $venta->fecha_venta->format('Y-m-d H:i') }}</dd>
+                    <dt class="text-gray-500">{{ __('Vendedor') }}</dt><dd class="sm:col-span-2">{{ $venta->usuario->name }}</dd>
+                    <dt class="text-gray-500">{{ __('Cliente') }}</dt><dd class="sm:col-span-2">{{ $venta->cliente?->nombre ?? '—' }}</dd>
+                    <dt class="text-gray-500">{{ __('Método de pago') }}</dt><dd class="sm:col-span-2">{{ $venta->metodo_pago->label() }}</dd>
+                    <dt class="text-gray-500">{{ __('Entrega') }}</dt>
+                    <dd class="sm:col-span-2">{{ $venta->entregada_at?->format('Y-m-d H:i') ?? __('Pendiente') }}</dd>
+                    @if ($venta->estado === \App\Enums\EstadoVenta::Anulada)
+                        <dt class="text-gray-500">{{ __('Anulada por') }}</dt>
+                        <dd class="sm:col-span-2">{{ $venta->anuladaPor?->name }} · {{ $venta->anulada_at?->format('Y-m-d H:i') }}</dd>
+                        <dt class="text-gray-500">{{ __('Motivo') }}</dt><dd class="sm:col-span-2">{{ $venta->motivo_anulacion }}</dd>
+                    @endif
+                </dl>
+            </div>
+
+            <div class="bg-white shadow sm:rounded-lg overflow-hidden">
+                <table class="min-w-full divide-y divide-gray-200 text-sm">
+                    <thead class="bg-gray-50 text-left text-xs uppercase tracking-wider text-gray-500">
+                        <tr>
+                            <th class="px-6 py-3">{{ __('Producto') }}</th>
+                            <th class="px-6 py-3 text-right">{{ __('Cantidad') }}</th>
+                            <th class="px-6 py-3 text-right">{{ __('Precio') }}</th>
+                            <th class="px-6 py-3 text-right">{{ __('Desc. %') }}</th>
+                            <th class="px-6 py-3 text-right">{{ __('Importe') }}</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
+                        @foreach ($venta->lineas as $linea)
+                            <tr>
+                                <td class="px-6 py-4">
+                                    {{ $linea->variante->producto->nombre }}
+                                    <span class="text-gray-400">— {{ $linea->variante->etiqueta() }}</span>
+                                </td>
+                                <td class="px-6 py-4 text-right">{{ $linea->cantidad }}</td>
+                                <td class="px-6 py-4 text-right">{{ number_format((float) $linea->precio_unitario, 2) }}</td>
+                                <td class="px-6 py-4 text-right">{{ $linea->descuento_porcentaje ? number_format((float) $linea->descuento_porcentaje, 2) : '—' }}</td>
+                                <td class="px-6 py-4 text-right">{{ number_format((float) $linea->importe_linea, 2) }}</td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                    <tfoot class="bg-gray-50 text-sm">
+                        <tr>
+                            <td class="px-6 py-2 text-right text-gray-500" colspan="4">{{ __('Subtotal') }}</td>
+                            <td class="px-6 py-2 text-right">{{ number_format((float) $venta->subtotal, 2) }}</td>
+                        </tr>
+                        <tr>
+                            <td class="px-6 py-2 text-right text-gray-500" colspan="4">{{ __('Descuento') }}</td>
+                            <td class="px-6 py-2 text-right">{{ number_format((float) $venta->descuento_total, 2) }}</td>
+                        </tr>
+                        <tr class="font-semibold text-gray-800">
+                            <td class="px-6 py-2 text-right" colspan="4">{{ __('Total') }}</td>
+                            <td class="px-6 py-2 text-right">{{ number_format((float) $venta->total, 2) }}</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+
+            @can('entregar', $venta)
+                <div class="bg-white shadow sm:rounded-lg p-6">
+                    <form method="POST" action="{{ route('ventas.entregar', $venta) }}"
+                          onsubmit="return confirm('{{ __('¿Marcar esta venta como entregada? Después ya no se podrá anular.') }}')">
+                        @csrf @method('PATCH')
+                        <x-primary-button>{{ __('Marcar como entregada') }}</x-primary-button>
+                    </form>
+                </div>
+            @endcan
+
+            @can('anular', $venta)
+                <div class="bg-white shadow sm:rounded-lg p-6 border border-red-100">
+                    <h3 class="font-semibold text-gray-800">{{ __('Anular venta') }}</h3>
+                    <p class="mt-1 text-sm text-gray-500">{{ __('Reintegra el stock automáticamente. Solo posible antes de la entrega.') }}</p>
+                    <form method="POST" action="{{ route('ventas.anular', $venta) }}" class="mt-3 space-y-3"
+                          onsubmit="return confirm('{{ __('¿Anular la venta') }} {{ $venta->numero }}?')">
+                        @csrf @method('PATCH')
+                        <div>
+                            <x-input-label for="motivo" :value="__('Motivo')" />
+                            <textarea id="motivo" name="motivo" rows="2" required
+                                      class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm text-sm">{{ old('motivo') }}</textarea>
+                            <x-input-error :messages="$errors->get('motivo')" class="mt-2" />
+                        </div>
+                        <x-danger-button>{{ __('Anular venta') }}</x-danger-button>
+                    </form>
+                </div>
+            @endcan
+
+        </div>
+    </div>
+</x-app-layout>

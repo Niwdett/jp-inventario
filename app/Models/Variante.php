@@ -75,6 +75,17 @@ class Variante extends Model
     }
 
     /**
+     * Renglones de venta que han vendido esta variante. Lo usan la anulación
+     * (para reintegrar stock) y la verificación del invariante del ledger.
+     *
+     * @return HasMany<VentaLinea, $this>
+     */
+    public function ventaLineas(): HasMany
+    {
+        return $this->hasMany(VentaLinea::class);
+    }
+
+    /**
      * Etiqueta legible: "38 / Negro" o "Única / Única".
      */
     public function etiqueta(): string

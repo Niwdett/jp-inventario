@@ -9,6 +9,7 @@ use App\Http\Controllers\ProductoController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\UsuarioController;
 use App\Http\Controllers\VarianteController;
+use App\Http\Controllers\VentaController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -22,6 +23,22 @@ Route::get('/dashboard', function () {
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
 });
+
+/*
+ * Ventas (RF-008, RF-009, RF-010). Empleado y Administrador; la VentaPolicy
+ * restringe al Empleado a sus propias ventas (RN-08, decisiones G1–G3).
+ */
+Route::middleware(['auth', 'rol:administrador,empleado'])
+    ->prefix('ventas')
+    ->name('ventas.')
+    ->group(function () {
+        Route::get('/', [VentaController::class, 'index'])->name('index');
+        Route::get('/registrar', [VentaController::class, 'create'])->name('create');
+        Route::post('/', [VentaController::class, 'store'])->name('store');
+        Route::get('/{venta}', [VentaController::class, 'show'])->name('show');
+        Route::patch('/{venta}/anular', [VentaController::class, 'anular'])->name('anular');
+        Route::patch('/{venta}/entregar', [VentaController::class, 'entregar'])->name('entregar');
+    });
 
 /*
  * Módulos administrativos. Requieren sesión y rol Administrador (RF-001, RF-002).
