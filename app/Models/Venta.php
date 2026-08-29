@@ -90,6 +90,57 @@ class Venta extends Model
     }
 
     /**
+     * Administrador que autorizó la venta a crédito pese a la mora del cliente
+     * (RN-09; solo se llena en ese caso).
+     *
+     * @return BelongsTo<User, $this>
+     */
+    public function creditoAutorizadoPor(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'credito_autorizado_por');
+    }
+
+    /**
+     * Abonos registrados contra la deuda de esta venta (RF-014).
+     *
+     * @return HasMany<Abono, $this>
+     */
+    public function abonos(): HasMany
+    {
+        return $this->hasMany(Abono::class);
+    }
+
+    /**
+     * Devoluciones originadas por esta venta (RF-011).
+     *
+     * @return HasMany<Devolucion, $this>
+     */
+    public function devoluciones(): HasMany
+    {
+        return $this->hasMany(Devolucion::class);
+    }
+
+    /**
+     * Movimientos del libro de saldo a favor ligados a esta venta: el saldo
+     * aplicado como pago (tipo `aplicado`) y, si se anula, su reverso
+     * (tipo `generado`).
+     *
+     * @return MorphMany<SaldoFavorMovimiento, $this>
+     */
+    public function saldoFavorMovimientos(): MorphMany
+    {
+        return $this->morphMany(SaldoFavorMovimiento::class, 'referencia');
+    }
+
+    /**
+     * ¿Es una venta a crédito? (independientemente de si ya está saldada).
+     */
+    public function esCredito(): bool
+    {
+        return $this->metodo_pago === MetodoPago::Credito;
+    }
+
+    /**
      * Movimientos de inventario originados por esta venta (venta y, si se anula,
      * anulacion).
      *

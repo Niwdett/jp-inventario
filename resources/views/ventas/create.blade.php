@@ -15,7 +15,13 @@
 
                 <form method="POST" action="{{ route('ventas.store') }}"
                       x-data="{
+                          esAdmin: {{ auth()->user()->esAdministrador() ? 'true' : 'false' }},
                           variantes: {{ Js::from($variantes) }},
+                          clientes: {{ Js::from($clientes) }},
+                          clientesEnMora: {{ Js::from($clientesEnMora) }},
+                          cliente_id: '{{ old('cliente_id') }}',
+                          metodo_pago: '{{ old('metodo_pago', 'efectivo') }}',
+                          saldo_favor_aplicado: '{{ old('saldo_favor_aplicado') }}',
                           lineas: [{ variante_id: '', cantidad: 1, precio_unitario: '', descuento_porcentaje: '' }],
                           agregar() { this.lineas.push({ variante_id: '', cantidad: 1, precio_unitario: '', descuento_porcentaje: '' }) },
                           quitar(i) { if (this.lineas.length > 1) this.lineas.splice(i, 1) },
@@ -24,7 +30,14 @@
                               const desc = parseFloat(l.descuento_porcentaje) || 0;
                               return (bruto * (1 - desc / 100)).toFixed(2);
                           },
-                          get total() { return this.lineas.reduce((s, l) => s + parseFloat(this.importe(l)), 0).toFixed(2); }
+                          get total() { return this.lineas.reduce((s, l) => s + parseFloat(this.importe(l)), 0); },
+                          get clienteSel() { return this.clientes.find(c => String(c.id) === String(this.cliente_id)) || null; },
+                          get saldoDisponible() { return this.clienteSel ? parseFloat(this.clienteSel.saldo_favor) : 0; },
+                          get saldoAplicado() { return Math.min(parseFloat(this.saldo_favor_aplicado) || 0, this.total); },
+                          get restante() { return Math.max(this.total - this.saldoAplicado, 0); },
+                          get esCredito() { return this.metodo_pago === 'credito' && this.restante > 0; },
+                          get clienteRequerido() { return this.metodo_pago === 'credito' || this.saldoAplicado > 0; },
+                          get clienteEnMora() { return this.cliente_id && this.clientesEnMora.map(String).includes(String(this.cliente_id)); },
                       }">
                     @csrf
 
@@ -73,20 +86,61 @@
 
                     <div class="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                            <x-input-label for="metodo_pago" :value="__('Método de pago')" />
-                            <select id="metodo_pago" name="metodo_pago" required
+                            <x-input-label for="cliente_id" :value="__('Cliente')" />
+                            <select id="cliente_id" name="cliente_id" x-model="cliente_id"
+                                    class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">
+                                <option value="">{{ __('— Sin cliente (contado) —') }}</option>
+                                @foreach ($clientes as $cliente)
+                                    <option value="{{ $cliente->id }}">{{ $cliente->nombre }}@if ($cliente->cedula) ({{ $cliente->cedula }})@endif</option>
+                                @endforeach
+                            </select>
+                            <p class="mt-1 text-xs text-red-600" x-show="clienteRequerido && !cliente_id" x-cloak>
+                                {{ __('El crédito o el uso de saldo a favor requieren un cliente.') }}
+                            </p>
+                            <p class="mt-1 text-xs text-gray-500" x-show="clienteSel" x-cloak>
+                                {{ __('Saldo a favor disponible:') }} <span class="font-semibold" x-text="saldoDisponible.toFixed(2)"></span>
+                            </p>
+                            <x-input-error :messages="$errors->get('cliente_id')" class="mt-2" />
+                        </div>
+
+                        <div>
+                            <x-input-label for="metodo_pago" :value="__('Método de pago del restante')" />
+                            <select id="metodo_pago" name="metodo_pago" x-model="metodo_pago" required
                                     class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">
                                 @foreach ($metodosPago as $metodo)
-                                    <option value="{{ $metodo->value }}" @selected(old('metodo_pago') === $metodo->value)>{{ $metodo->label() }}</option>
+                                    <option value="{{ $metodo->value }}">{{ $metodo->label() }}</option>
                                 @endforeach
                             </select>
                             <x-input-error :messages="$errors->get('metodo_pago')" class="mt-2" />
                         </div>
-                        <div class="flex items-end justify-end">
-                            <p class="text-lg font-semibold text-gray-800">
-                                {{ __('Total:') }} <span x-text="total"></span>
-                            </p>
+
+                        <div x-show="clienteSel" x-cloak>
+                            <x-input-label for="saldo_favor_aplicado" :value="__('Saldo a favor a aplicar')" />
+                            <input type="number" min="0" step="0.01" id="saldo_favor_aplicado" name="saldo_favor_aplicado" x-model="saldo_favor_aplicado"
+                                   class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">
+                            <x-input-error :messages="$errors->get('saldo_favor_aplicado')" class="mt-2" />
                         </div>
+
+                        <div class="flex items-end justify-end text-sm text-gray-600">
+                            <div class="text-right space-y-0.5">
+                                <p>{{ __('Total:') }} <span class="font-semibold text-gray-800" x-text="total.toFixed(2)"></span></p>
+                                <p x-show="saldoAplicado > 0" x-cloak>{{ __('Saldo a favor:') }} <span x-text="'-' + saldoAplicado.toFixed(2)"></span></p>
+                                <p class="text-lg font-semibold text-gray-800">{{ __('A pagar:') }} <span x-text="restante.toFixed(2)"></span></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 rounded-md bg-amber-50 border border-amber-200 p-3 text-sm text-amber-800"
+                         x-show="esCredito && clienteEnMora" x-cloak>
+                        <p class="font-semibold">{{ __('Este cliente está en mora (RN-09).') }}</p>
+                        <template x-if="esAdmin">
+                            <label class="mt-2 flex items-center gap-2">
+                                <input type="checkbox" name="autorizar_mora" value="1"
+                                       class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                                <span>{{ __('Autorizo esta venta a crédito pese a la mora.') }}</span>
+                            </label>
+                        </template>
+                        <p class="mt-1" x-show="!esAdmin">{{ __('Solo un Administrador puede autorizar la venta a crédito.') }}</p>
                     </div>
 
                     <div class="mt-6 flex items-center gap-4">

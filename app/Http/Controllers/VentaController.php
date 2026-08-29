@@ -3,6 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Enums\MetodoPago;
+use App\Exceptions\ClienteEnMoraException;
+use App\Exceptions\PagoVentaInvalidoException;
+use App\Exceptions\SaldoFavorInsuficienteException;
 use App\Exceptions\StockInsuficienteException;
 use App\Exceptions\VentaNoAnulableException;
 use App\Http\Requests\AnularVentaRequest;
@@ -52,9 +55,18 @@ class VentaController extends Controller
     {
         $this->authorize('create', Venta::class);
 
+        $limiteMora = now()->subDays(Cliente::DIAS_MORA);
+
         return view('ventas.create', [
             'variantes' => Variante::opcionesParaSelect(),
-            'metodosPago' => MetodoPago::disponiblesEnContado(),
+            'metodosPago' => MetodoPago::cases(),
+            'clientes' => Cliente::orderBy('nombre')->get(['id', 'nombre', 'cedula', 'saldo_favor']),
+            'clientesEnMora' => Cliente::query()
+                ->whereHas('ventas', fn ($query) => $query
+                    ->where('metodo_pago', MetodoPago::Credito)
+                    ->where('credito_saldo_pendiente', '>', 0)
+                    ->where('fecha_venta', '<', $limiteMora))
+                ->pluck('id'),
         ]);
     }
 
@@ -70,8 +82,10 @@ class VentaController extends Controller
                 metodoPago: MetodoPago::from($request->validated('metodo_pago')),
                 cliente: $cliente,
                 usuario: $request->user(),
+                saldoFavorAplicado: $request->saldoFavorAplicadoParaServicio(),
+                autorizarMora: $request->autorizarMora(),
             );
-        } catch (StockInsuficienteException $e) {
+        } catch (StockInsuficienteException|SaldoFavorInsuficienteException|ClienteEnMoraException|PagoVentaInvalidoException $e) {
             return back()->withInput()->with('error', $e->getMessage());
         }
 
@@ -84,7 +98,15 @@ class VentaController extends Controller
     {
         $this->authorize('view', $venta);
 
-        $venta->load(['lineas.variante.producto', 'usuario', 'anuladaPor', 'cliente']);
+        $venta->load([
+            'lineas.variante.producto',
+            'usuario',
+            'anuladaPor',
+            'cliente',
+            'creditoAutorizadoPor',
+            'abonos.usuario',
+            'devoluciones.lineas',
+        ]);
 
         return view('ventas.show', compact('venta'));
     }

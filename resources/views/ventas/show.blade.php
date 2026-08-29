@@ -27,8 +27,19 @@
                 <dl class="grid grid-cols-2 sm:grid-cols-3 gap-x-8 gap-y-2 text-sm">
                     <dt class="text-gray-500">{{ __('Fecha') }}</dt><dd class="sm:col-span-2">{{ $venta->fecha_venta->format('Y-m-d H:i') }}</dd>
                     <dt class="text-gray-500">{{ __('Vendedor') }}</dt><dd class="sm:col-span-2">{{ $venta->usuario->name }}</dd>
-                    <dt class="text-gray-500">{{ __('Cliente') }}</dt><dd class="sm:col-span-2">{{ $venta->cliente?->nombre ?? '—' }}</dd>
+                    <dt class="text-gray-500">{{ __('Cliente') }}</dt>
+                    <dd class="sm:col-span-2">
+                        @if ($venta->cliente)
+                            <a href="{{ route('admin.clientes.show', $venta->cliente) }}" class="text-indigo-600 hover:text-indigo-900">{{ $venta->cliente->nombre }}</a>
+                        @else
+                            —
+                        @endif
+                    </dd>
                     <dt class="text-gray-500">{{ __('Método de pago') }}</dt><dd class="sm:col-span-2">{{ $venta->metodo_pago->label() }}</dd>
+                    @if ((float) $venta->saldo_favor_aplicado > 0)
+                        <dt class="text-gray-500">{{ __('Saldo a favor aplicado') }}</dt>
+                        <dd class="sm:col-span-2">{{ number_format((float) $venta->saldo_favor_aplicado, 2) }}</dd>
+                    @endif
                     <dt class="text-gray-500">{{ __('Entrega') }}</dt>
                     <dd class="sm:col-span-2">{{ $venta->entregada_at?->format('Y-m-d H:i') ?? __('Pendiente') }}</dd>
                     @if ($venta->estado === \App\Enums\EstadoVenta::Anulada)
@@ -81,6 +92,65 @@
                 </table>
             </div>
 
+            @if ($venta->esCredito())
+                <div class="bg-white shadow sm:rounded-lg p-6">
+                    <h3 class="font-semibold text-gray-800">{{ __('Crédito') }}</h3>
+                    <dl class="mt-2 grid grid-cols-2 sm:grid-cols-3 gap-x-8 gap-y-2 text-sm">
+                        <dt class="text-gray-500">{{ __('Deuda inicial') }}</dt>
+                        <dd class="sm:col-span-2">{{ number_format((float) $venta->credito_monto, 2) }}</dd>
+                        <dt class="text-gray-500">{{ __('Saldo pendiente') }}</dt>
+                        <dd class="sm:col-span-2 font-semibold {{ (float) $venta->credito_saldo_pendiente > 0 ? 'text-amber-700' : 'text-green-700' }}">
+                            {{ number_format((float) $venta->credito_saldo_pendiente, 2) }}
+                            @if ((float) $venta->credito_saldo_pendiente <= 0) · {{ __('saldada') }} @endif
+                        </dd>
+                        @if ($venta->credito_autorizado_por)
+                            <dt class="text-gray-500">{{ __('Autorizada en mora por') }}</dt>
+                            <dd class="sm:col-span-2">{{ $venta->creditoAutorizadoPor?->name }}</dd>
+                        @endif
+                    </dl>
+
+                    @if ($venta->abonos->isNotEmpty())
+                        <table class="mt-4 min-w-full divide-y divide-gray-200 text-sm">
+                            <thead class="text-left text-xs uppercase tracking-wider text-gray-500">
+                                <tr>
+                                    <th class="py-2">{{ __('Fecha') }}</th>
+                                    <th class="py-2">{{ __('Registró') }}</th>
+                                    <th class="py-2 text-right">{{ __('Monto') }}</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100">
+                                @foreach ($venta->abonos as $abono)
+                                    <tr>
+                                        <td class="py-2">{{ $abono->fecha->format('Y-m-d') }}</td>
+                                        <td class="py-2">{{ $abono->usuario?->name }}</td>
+                                        <td class="py-2 text-right">{{ number_format((float) $abono->monto, 2) }}</td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    @endif
+
+                    @if (auth()->user()->esAdministrador() && (float) $venta->credito_saldo_pendiente > 0 && $venta->estado === \App\Enums\EstadoVenta::Confirmada)
+                        <form method="POST" action="{{ route('admin.creditos.abonos.store', $venta) }}" class="mt-4 flex flex-wrap items-end gap-3">
+                            @csrf
+                            <div>
+                                <x-input-label for="monto" :value="__('Monto del abono')" />
+                                <x-text-input id="monto" name="monto" type="number" step="0.01" min="0.01"
+                                    :max="(float) $venta->credito_saldo_pendiente" class="mt-1 block w-40" required />
+                                <x-input-error :messages="$errors->get('monto')" class="mt-1" />
+                            </div>
+                            <div>
+                                <x-input-label for="fecha" :value="__('Fecha')" />
+                                <x-text-input id="fecha" name="fecha" type="date" :value="old('fecha', now()->toDateString())"
+                                    max="{{ now()->toDateString() }}" class="mt-1 block" required />
+                                <x-input-error :messages="$errors->get('fecha')" class="mt-1" />
+                            </div>
+                            <x-primary-button>{{ __('Registrar abono') }}</x-primary-button>
+                        </form>
+                    @endif
+                </div>
+            @endif
+
             @can('entregar', $venta)
                 <div class="bg-white shadow sm:rounded-lg p-6">
                     <form method="POST" action="{{ route('ventas.entregar', $venta) }}"
@@ -108,6 +178,34 @@
                     </form>
                 </div>
             @endcan
+
+            @if (auth()->user()->esAdministrador() && $venta->entregada_at && $venta->estado === \App\Enums\EstadoVenta::Confirmada)
+                <div class="bg-white shadow sm:rounded-lg p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="font-semibold text-gray-800">{{ __('Devoluciones') }}</h3>
+                            <p class="mt-1 text-sm text-gray-500">{{ __('Tras la entrega, el camino es la devolución (genera saldo a favor, RN-11).') }}</p>
+                        </div>
+                        <a href="{{ route('admin.devoluciones.create', $venta) }}"
+                           class="inline-flex items-center px-4 py-2 bg-gray-800 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700">
+                            {{ __('Registrar devolución') }}
+                        </a>
+                    </div>
+
+                    @if ($venta->devoluciones->isNotEmpty())
+                        <ul class="mt-4 space-y-1 text-sm">
+                            @foreach ($venta->devoluciones as $devolucion)
+                                <li>
+                                    {{ $devolucion->fecha->format('Y-m-d') }} ·
+                                    {{ $devolucion->estado->label() }} ·
+                                    {{ __('unidades:') }} {{ $devolucion->lineas->sum('cantidad') }} ·
+                                    {{ __('saldo generado:') }} {{ number_format((float) $devolucion->saldo_generado, 2) }}
+                                </li>
+                            @endforeach
+                        </ul>
+                    @endif
+                </div>
+            @endif
 
         </div>
     </div>

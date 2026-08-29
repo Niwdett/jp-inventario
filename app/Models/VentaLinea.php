@@ -2,12 +2,14 @@
 
 namespace App\Models;
 
+use App\Enums\EstadoDevolucion;
 use App\Services\Ventas\RegistrarVenta;
 use Database\Factories\VentaLineaFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * Renglón de una venta (bloque E, A2, E2).
@@ -52,6 +54,35 @@ class VentaLinea extends Model
     public function variante(): BelongsTo
     {
         return $this->belongsTo(Variante::class);
+    }
+
+    /**
+     * @return HasMany<DevolucionLinea, $this>
+     */
+    public function devolucionLineas(): HasMany
+    {
+        return $this->hasMany(DevolucionLinea::class);
+    }
+
+    /**
+     * Unidades de esta línea ya devueltas en devoluciones validadas. La guarda
+     * del servicio de devolución impide que una nueva devolución supere
+     * `cantidad − cantidadDevuelta()`.
+     */
+    public function cantidadDevuelta(): int
+    {
+        return (int) $this->devolucionLineas()
+            ->whereHas('devolucion', fn ($query) => $query->where('estado', EstadoDevolucion::Validada))
+            ->sum('cantidad');
+    }
+
+    /**
+     * Lo que el cliente pagó por unidad de esta línea (importe con descuento
+     * aplicado / cantidad). Base del `valor_unitario` de una devolución.
+     */
+    public function valorUnitarioPagado(): string
+    {
+        return bcdiv((string) $this->importe_linea, (string) $this->cantidad, 2);
     }
 
     /**

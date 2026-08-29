@@ -5,30 +5,36 @@ namespace App\Services\Ventas;
 use App\Enums\EstadoVenta;
 use App\Enums\TipoMovimiento;
 use App\Exceptions\VentaNoAnulableException;
+use App\Models\Cliente;
 use App\Models\User;
 use App\Models\Variante;
 use App\Models\Venta;
+use App\Services\Clientes\MovimientoSaldoFavor;
 use App\Services\Inventario\MovimientoStock;
 use Illuminate\Support\Facades\DB;
 
 /**
  * Anulación de una venta antes de la entrega (RF-010; flujo 4.3).
  *
- * En una transacción (bloque B1):
+ * En una transacción (bloque B1), con el mismo orden de bloqueo que
+ * {@see RegistrarVenta} (variantes por `id`, luego el cliente):
  *
  * 1. Recargar la venta con `lockForUpdate` y revalidar que sigue siendo
- *    anulable (confirmada y no entregada) — la Policy ya hizo la comprobación
- *    amable de permiso; esto protege contra un cambio de estado entre medias.
- * 2. Bloquear las variantes de la venta, ordenadas por `id`.
- * 3. Reintegrar el stock de cada línea + movimiento `tipo=anulacion`.
- * 4. Marcar la venta como anulada con su auditoría.
- *
- * Sprint 3: la venta es siempre de contado, así que no hay saldo a favor ni
- * deuda de crédito que revertir (esos ramales del flujo 4.3 entran en Sprint 4).
+ *    anulable (confirmada y no entregada).
+ * 2. Bloquear las variantes de la venta y reintegrar su stock + movimiento
+ *    `tipo=anulacion`.
+ * 3. Si la venta aplicó saldo a favor, devolverlo (`tipo=generado`).
+ * 4. Si fue a crédito, anular la deuda (`credito_saldo_pendiente = 0`); los
+ *    abonos ya registrados se convierten en saldo a favor — nunca efectivo
+ *    (RN-11).
+ * 5. Marcar la venta como anulada con su auditoría.
  */
 class AnularVenta
 {
-    public function __construct(private readonly MovimientoStock $movimientoStock) {}
+    public function __construct(
+        private readonly MovimientoStock $movimientoStock,
+        private readonly MovimientoSaldoFavor $movimientoSaldoFavor,
+    ) {}
 
     /**
      * @throws VentaNoAnulableException
@@ -62,6 +68,8 @@ class AnularVenta
                 );
             }
 
+            $this->revertirDineroDelCliente($venta);
+
             $venta->estado = EstadoVenta::Anulada;
             $venta->anulada_at = now();
             $venta->anulada_por = $usuario->id;
@@ -70,5 +78,26 @@ class AnularVenta
 
             return $venta;
         });
+    }
+
+    /**
+     * Devuelve al cliente el saldo a favor que la venta consumió y el importe
+     * de los abonos hechos contra su crédito, y cancela la deuda pendiente.
+     * Todo como saldo a favor (RN-11), con el cliente bloqueado.
+     */
+    private function revertirDineroDelCliente(Venta $venta): void
+    {
+        $saldoAplicado = (string) $venta->saldo_favor_aplicado;
+        $abonado = $venta->esCredito() ? (string) $venta->abonos()->sum('monto') : '0';
+        $aDevolver = bcadd($saldoAplicado, $abonado, 2);
+
+        if (bccomp($aDevolver, '0', 2) > 0) {
+            $cliente = Cliente::whereKey($venta->cliente_id)->lockForUpdate()->firstOrFail();
+            $this->movimientoSaldoFavor->generar($cliente, $aDevolver, $venta);
+        }
+
+        if ($venta->esCredito()) {
+            $venta->credito_saldo_pendiente = '0';
+        }
     }
 }
