@@ -94,7 +94,7 @@ PATCH ventas/{venta}/entregar    ventas.entregar
 
 - **Crédito, abonos, mora, saldo a favor, gestión de clientes, devoluciones → Sprint 4.** El esquema de `ventas` ya los soporta; falta la lógica, el CRUD de clientes y las tablas `abonos` / `saldo_favor_movimientos` / `devoluciones` / `devolucion_lineas`.
 - **`entradas_inventario` sin edición/anulación** (heredado de Sprint 2): un `costo_unitario` mal tecleado sigue contaminando `costo_promedio`. Resolver antes de cargar inventario real.
-- **`VarianteFactory` con colisiones aleatorias**: `talla`/`color` salen de un rango pequeño y a veces chocan con el índice único, haciendo fallar `ProductoManagementTest` de forma intermitente. Pendiente de arreglar en la factory (no afecta a producción).
+- ~~**`VarianteFactory` con colisiones aleatorias**~~: **resuelto** — `talla`/`color` por defecto ahora recorren el espacio talla×color con un contador monotónico, así que variantes consecutivas de la factory no chocan con el índice único. Suite estable en corridas repetidas.
 - **Sin comando de reconciliación stock ↔ ledger** (heredado): valorar `php artisan inventario:verificar` en Sprint 5.
 - **RF-016 Historial de producto → Sprint 5** (Observer sobre `Producto`).
 - La política de `entregar` asume "propia o Administrador"; confirmar con el negocio si cualquier vendedor debe poder marcar la entrega.

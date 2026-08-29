@@ -12,14 +12,31 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 class VarianteFactory extends Factory
 {
     /**
+     * Contador monotónico para las combinaciones talla/color por defecto.
+     *
+     * `talla` y `color` forman parte del índice único
+     * `(producto_id, talla, color)` entre variantes activas. Con valores
+     * aleatorios de un rango pequeño, dos variantes del mismo producto chocaban
+     * de vez en cuando y hacían fallar los tests de forma intermitente. Este
+     * contador recorre el espacio talla×color en orden, así que variantes
+     * consecutivas creadas por la factory (p. ej. `->count(2)`) nunca colisionan.
+     */
+    protected static int $secuencia = 0;
+
+    /**
      * @return array<string, mixed>
      */
     public function definition(): array
     {
+        $tallas = ['XS', 'S', 'M', 'L', 'XL', 'XXL', '35', '36', '37', '38', '39', '40', '41', '42', '43', '44'];
+        $colores = ['Negro', 'Blanco', 'Azul', 'Rojo', 'Verde', 'Gris', 'Beige', 'Marrón', 'Amarillo', 'Rosa'];
+
+        $n = static::$secuencia++;
+
         return [
             'producto_id' => Producto::factory(),
-            'talla' => (string) fake()->numberBetween(35, 45),
-            'color' => fake()->safeColorName(),
+            'talla' => $tallas[$n % count($tallas)],
+            'color' => $colores[intdiv($n, count($tallas)) % count($colores)],
             'codigo' => null,
             'stock' => fake()->numberBetween(0, 50),
             'costo_promedio' => fake()->randomFloat(4, 5, 200),
