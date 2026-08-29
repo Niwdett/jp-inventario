@@ -8,6 +8,8 @@ use App\Services\Ventas\AnularVenta;
 use App\Services\Ventas\RegistrarVenta;
 use Database\Factories\VentaFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\Scope;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -138,6 +140,29 @@ class Venta extends Model
     public function esCredito(): bool
     {
         return $this->metodo_pago === MetodoPago::Credito;
+    }
+
+    /**
+     * Solo ventas confirmadas: las anuladas no cuentan para reportes ni para el
+     * dashboard (RF-017, RF-019, RF-020).
+     */
+    #[Scope]
+    protected function confirmadas(Builder $query): void
+    {
+        $query->where('estado', EstadoVenta::Confirmada);
+    }
+
+    /**
+     * Ganancia bruta de la venta (RN-04): Σ de la ganancia de cada línea, sin
+     * descontar todavía las devoluciones. Requiere `lineas` cargada. Aritmética
+     * decimal (E2).
+     */
+    public function gananciaBruta(): string
+    {
+        return $this->lineas->reduce(
+            fn (string $acumulado, VentaLinea $linea) => bcadd($acumulado, $linea->ganancia(), 2),
+            '0',
+        );
     }
 
     /**
