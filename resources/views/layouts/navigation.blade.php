@@ -17,6 +17,15 @@
                     </x-nav-link>
 
                     @if (auth()->user()->esAdministrador())
+                        <x-nav-link :href="route('admin.productos.index')" :active="request()->routeIs('admin.productos.*') || request()->routeIs('admin.categorias.*')">
+                            {{ __('Productos') }}
+                        </x-nav-link>
+                        <x-nav-link :href="route('admin.categorias.index')" :active="request()->routeIs('admin.categorias.*')">
+                            {{ __('Categorías') }}
+                        </x-nav-link>
+                        <x-nav-link :href="route('admin.inventario.entradas.index')" :active="request()->routeIs('admin.inventario.*')">
+                            {{ __('Inventario') }}
+                        </x-nav-link>
                         <x-nav-link :href="route('admin.usuarios.index')" :active="request()->routeIs('admin.usuarios.*')">
                             {{ __('Usuarios') }}
                         </x-nav-link>
@@ -78,6 +87,15 @@
             </x-responsive-nav-link>
 
             @if (auth()->user()->esAdministrador())
+                <x-responsive-nav-link :href="route('admin.productos.index')" :active="request()->routeIs('admin.productos.*')">
+                    {{ __('Productos') }}
+                </x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('admin.categorias.index')" :active="request()->routeIs('admin.categorias.*')">
+                    {{ __('Categorías') }}
+                </x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('admin.inventario.entradas.index')" :active="request()->routeIs('admin.inventario.*')">
+                    {{ __('Inventario') }}
+                </x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('admin.usuarios.index')" :active="request()->routeIs('admin.usuarios.*')">
                     {{ __('Usuarios') }}
                 </x-responsive-nav-link>
