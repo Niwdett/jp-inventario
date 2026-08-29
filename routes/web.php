@@ -3,6 +3,9 @@
 use App\Http\Controllers\AjusteInventarioController;
 use App\Http\Controllers\AlertaStockController;
 use App\Http\Controllers\CategoriaController;
+use App\Http\Controllers\ClienteController;
+use App\Http\Controllers\CreditoController;
+use App\Http\Controllers\DevolucionController;
 use App\Http\Controllers\EntradaInventarioController;
 use App\Http\Controllers\MovimientoInventarioController;
 use App\Http\Controllers\ProductoController;
@@ -56,6 +59,20 @@ Route::middleware(['auth', 'rol:administrador'])
         Route::patch('categorias/{categoria}/restaurar', [CategoriaController::class, 'restore'])
             ->withTrashed()
             ->name('categorias.restore');
+
+        Route::resource('clientes', ClienteController::class);
+        Route::patch('clientes/{cliente}/restaurar', [ClienteController::class, 'restore'])
+            ->withTrashed()
+            ->name('clientes.restore');
+
+        // Créditos y abonos (RF-014).
+        Route::get('creditos', [CreditoController::class, 'index'])->name('creditos.index');
+        Route::post('creditos/{venta}/abonos', [CreditoController::class, 'abonar'])->name('creditos.abonos.store');
+
+        // Devoluciones tras la entrega (RF-011).
+        Route::get('devoluciones', [DevolucionController::class, 'index'])->name('devoluciones.index');
+        Route::get('ventas/{venta}/devoluciones/registrar', [DevolucionController::class, 'create'])->name('devoluciones.create');
+        Route::post('ventas/{venta}/devoluciones', [DevolucionController::class, 'store'])->name('devoluciones.store');
 
         Route::resource('productos', ProductoController::class);
         Route::patch('productos/{producto}/restaurar', [ProductoController::class, 'restore'])

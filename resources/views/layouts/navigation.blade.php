@@ -30,6 +30,15 @@
                         <x-nav-link :href="route('admin.inventario.entradas.index')" :active="request()->routeIs('admin.inventario.*')">
                             {{ __('Inventario') }}
                         </x-nav-link>
+                        <x-nav-link :href="route('admin.clientes.index')" :active="request()->routeIs('admin.clientes.*')">
+                            {{ __('Clientes') }}
+                        </x-nav-link>
+                        <x-nav-link :href="route('admin.creditos.index')" :active="request()->routeIs('admin.creditos.*')">
+                            {{ __('Créditos') }}
+                        </x-nav-link>
+                        <x-nav-link :href="route('admin.devoluciones.index')" :active="request()->routeIs('admin.devoluciones.*')">
+                            {{ __('Devoluciones') }}
+                        </x-nav-link>
                         <x-nav-link :href="route('admin.usuarios.index')" :active="request()->routeIs('admin.usuarios.*')">
                             {{ __('Usuarios') }}
                         </x-nav-link>
@@ -103,6 +112,15 @@
                 </x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('admin.inventario.entradas.index')" :active="request()->routeIs('admin.inventario.*')">
                     {{ __('Inventario') }}
+                </x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('admin.clientes.index')" :active="request()->routeIs('admin.clientes.*')">
+                    {{ __('Clientes') }}
+                </x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('admin.creditos.index')" :active="request()->routeIs('admin.creditos.*')">
+                    {{ __('Créditos') }}
+                </x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('admin.devoluciones.index')" :active="request()->routeIs('admin.devoluciones.*')">
+                    {{ __('Devoluciones') }}
                 </x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('admin.usuarios.index')" :active="request()->routeIs('admin.usuarios.*')">
                     {{ __('Usuarios') }}

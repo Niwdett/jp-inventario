@@ -49,13 +49,13 @@ test('un administrador también puede registrar ventas', function () {
         ->assertRedirect(route('ventas.show', Venta::sole()));
 });
 
-test('el método de pago a crédito se rechaza en el Sprint 3', function () {
+test('una venta a crédito exige un cliente asociado (E1)', function () {
     $empleado = User::factory()->empleado()->create();
 
     $this->actingAs($empleado)
         ->from(route('ventas.create'))
         ->post(route('ventas.store'), payloadVenta(['metodo_pago' => 'credito']))
-        ->assertSessionHasErrors('metodo_pago');
+        ->assertSessionHasErrors('cliente_id');
 
     expect(Venta::count())->toBe(0);
 });

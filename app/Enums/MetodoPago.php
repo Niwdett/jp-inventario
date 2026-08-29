@@ -3,12 +3,13 @@
 namespace App\Enums;
 
 /**
- * Método de pago de una venta (bloque C1). Un solo método por venta (RF-008):
- * no hay pagos partidos en el MVP.
+ * Método de pago del restante de una venta (bloque C1). Un solo método por venta
+ * (RF-008): no hay pagos partidos en el MVP. El saldo a favor se aplica aparte
+ * (`ventas.saldo_favor_aplicado`); si cubre el total, el restante es 0 y la
+ * venta se registra como `Efectivo`.
  *
- * `Credito` existe en el esquema desde el Sprint 3, pero la venta a crédito
- * (deuda, mora, autorización) se implementa en el Sprint 4: hasta entonces el
- * formulario de venta solo ofrece `Efectivo` y `Transferencia`.
+ * `Credito` genera una deuda por venta (Sprint 4): ver `RegistrarVenta` y el
+ * bloque C2.
  */
 enum MetodoPago: string
 {
@@ -23,15 +24,5 @@ enum MetodoPago: string
             self::Transferencia => 'Transferencia',
             self::Credito => 'Crédito',
         };
-    }
-
-    /**
-     * Métodos que un vendedor puede elegir en el Sprint 3 (venta de contado).
-     *
-     * @return array<int, self>
-     */
-    public static function disponiblesEnContado(): array
-    {
-        return [self::Efectivo, self::Transferencia];
     }
 }
