@@ -100,6 +100,7 @@ Route::middleware(['auth', 'rol:administrador'])
             Route::get('entradas', [EntradaInventarioController::class, 'index'])->name('entradas.index');
             Route::get('entradas/registrar', [EntradaInventarioController::class, 'create'])->name('entradas.create');
             Route::post('entradas', [EntradaInventarioController::class, 'store'])->name('entradas.store');
+            Route::patch('entradas/{entrada}/anular', [EntradaInventarioController::class, 'anular'])->name('entradas.anular');
 
             Route::get('ajustes', [AjusteInventarioController::class, 'index'])->name('ajustes.index');
             Route::get('ajustes/registrar', [AjusteInventarioController::class, 'create'])->name('ajustes.create');
