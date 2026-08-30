@@ -9,11 +9,32 @@ beforeEach(function () {
     $this->admin = User::factory()->administrador()->create();
 });
 
-test('un empleado no puede gestionar clientes', function () {
+test('un empleado puede crear, consultar y editar clientes pero no eliminarlos', function () {
     $empleado = User::factory()->empleado()->create();
+    $cliente = Cliente::factory()->create(['nombre' => 'Ana Vélez', 'saldo_favor' => 0]);
 
-    $this->actingAs($empleado)->get(route('admin.clientes.index'))->assertForbidden();
-    $this->actingAs($empleado)->post(route('admin.clientes.store'), [])->assertForbidden();
+    // Crear y consultar.
+    $this->actingAs($empleado)->get(route('admin.clientes.index'))->assertOk();
+    $this->actingAs($empleado)->get(route('admin.clientes.create'))->assertOk();
+    $this->actingAs($empleado)->get(route('admin.clientes.show', $cliente))->assertOk();
+    $this->actingAs($empleado)
+        ->post(route('admin.clientes.store'), ['nombre' => 'Nuevo desde mostrador'])
+        ->assertRedirect();
+    expect(Cliente::where('nombre', 'Nuevo desde mostrador')->exists())->toBeTrue();
+
+    // Editar.
+    $this->actingAs($empleado)
+        ->put(route('admin.clientes.update', $cliente), ['nombre' => 'Ana Vélez R.'])
+        ->assertRedirect(route('admin.clientes.show', $cliente));
+    expect($cliente->refresh()->nombre)->toBe('Ana Vélez R.');
+
+    // Pero NO eliminar ni restaurar: eso es solo del Administrador.
+    $this->actingAs($empleado)->delete(route('admin.clientes.destroy', $cliente))->assertForbidden();
+    expect($cliente->refresh()->trashed())->toBeFalse();
+
+    $cliente->delete();
+    $this->actingAs($empleado)->patch(route('admin.clientes.restore', $cliente))->assertForbidden();
+    expect($cliente->refresh()->trashed())->toBeTrue();
 });
 
 test('el administrador ve la lista de clientes', function () {

@@ -127,14 +127,18 @@ class RegistrarVenta
             foreach ($lineas as $indice => $linea) {
                 $variante = $variantes[$linea['variante_id']];
 
-                $venta->lineas()->create([
+                // `costo_unitario_snapshot` e `importe_linea` no son fillable
+                // (son la base inmutable de la ganancia, A2/RN-05): se fijan aquí
+                // por asignación directa, nunca por asignación masiva.
+                $ventaLinea = $venta->lineas()->make([
                     'variante_id' => $variante->id,
                     'cantidad' => $linea['cantidad'],
                     'precio_unitario' => $linea['precio_unitario'],
                     'descuento_porcentaje' => $linea['descuento_porcentaje'],
-                    'costo_unitario_snapshot' => (string) $variante->costo_promedio,
-                    'importe_linea' => $importes[$indice],
                 ]);
+                $ventaLinea->costo_unitario_snapshot = (string) $variante->costo_promedio;
+                $ventaLinea->importe_linea = $importes[$indice];
+                $ventaLinea->save();
 
                 $this->movimientoStock->descontar($variante, $linea['cantidad'], TipoMovimiento::Venta, $venta, $usuario);
             }

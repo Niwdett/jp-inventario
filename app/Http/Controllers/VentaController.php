@@ -8,6 +8,7 @@ use App\Exceptions\PagoVentaInvalidoException;
 use App\Exceptions\SaldoFavorInsuficienteException;
 use App\Exceptions\StockInsuficienteException;
 use App\Exceptions\VentaNoAnulableException;
+use App\Exceptions\VentaNoEntregableException;
 use App\Http\Requests\AnularVentaRequest;
 use App\Http\Requests\StoreVentaRequest;
 use App\Models\Cliente;
@@ -18,6 +19,7 @@ use App\Services\Ventas\AnularVenta;
 use App\Services\Ventas\RegistrarVenta;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 /**
@@ -55,18 +57,11 @@ class VentaController extends Controller
     {
         $this->authorize('create', Venta::class);
 
-        $limiteMora = now()->subDays(Cliente::DIAS_MORA);
-
         return view('ventas.create', [
             'variantes' => Variante::opcionesParaSelect(),
             'metodosPago' => MetodoPago::cases(),
             'clientes' => Cliente::orderBy('nombre')->get(['id', 'nombre', 'cedula', 'saldo_favor']),
-            'clientesEnMora' => Cliente::query()
-                ->whereHas('ventas', fn ($query) => $query
-                    ->where('metodo_pago', MetodoPago::Credito)
-                    ->where('credito_saldo_pendiente', '>', 0)
-                    ->where('fecha_venta', '<', $limiteMora))
-                ->pluck('id'),
+            'clientesEnMora' => Cliente::enMora()->pluck('id'),
         ]);
     }
 
@@ -128,7 +123,19 @@ class VentaController extends Controller
     {
         $this->authorize('entregar', $venta);
 
-        $venta->forceFill(['entregada_at' => now()])->save();
+        try {
+            DB::transaction(function () use ($venta) {
+                $bloqueada = Venta::whereKey($venta->getKey())->lockForUpdate()->firstOrFail();
+
+                if (! $bloqueada->puedeEntregarse()) {
+                    throw VentaNoEntregableException::para($bloqueada);
+                }
+
+                $bloqueada->forceFill(['entregada_at' => now()])->save();
+            });
+        } catch (VentaNoEntregableException $e) {
+            return back()->with('error', $e->getMessage());
+        }
 
         return redirect()
             ->route('ventas.show', $venta)

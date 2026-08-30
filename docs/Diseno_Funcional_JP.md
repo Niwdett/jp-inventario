@@ -52,20 +52,26 @@ Administrador
 
 ```
 Empleado / Vendedor
-└── Ventas
-    ├── Buscar producto / consultar stock   RN-07  (cantidad exacta por variante)
-    ├── Registrar venta                     RF-008, RF-009
-    │   ├── Seleccionar variantes y cantidades
-    │   ├── Capturar precio real (RN-03) y descuento opcional
-    │   ├── Seleccionar método de pago
-    │   ├── Aplicar saldo a favor            RF-012  (si hay cliente)   [ver decisión G1]
-    │   └── Confirmar (descuenta stock)      RF-009
-    ├── Anular venta propia (antes de entrega)  RF-010  [ver decisión G2]
-    └── Mis ventas                          (solo las registradas por este usuario, RN-08)
+├── Ventas
+│   ├── Buscar producto / consultar stock   RN-07  (cantidad exacta por variante)
+│   ├── Registrar venta                     RF-008, RF-009
+│   │   ├── Seleccionar variantes y cantidades
+│   │   ├── Capturar precio real (RN-03) y descuento opcional
+│   │   ├── Seleccionar método de pago (incl. crédito)
+│   │   ├── Aplicar saldo a favor            RF-012  (si hay cliente)   [ver decisión G1]
+│   │   └── Confirmar (descuenta stock)      RF-009
+│   ├── Anular venta propia (antes de entrega)  RF-010  [ver decisión G2]
+│   ├── Registrar abono de una venta propia a crédito  RF-014  [ver decisión G1]
+│   └── Mis ventas                          (solo las registradas por este usuario, RN-08)
+└── Clientes                                RF-013  [ver decisión G1]
+    ├── Buscar / consultar ficha (saldo a favor, créditos abiertos)
+    ├── Registrar cliente
+    └── Editar cliente
 ```
 
-**El Empleado NO ve:** Dashboard, Reportes, Productos, Categorías, Inventario, gestión de
-Clientes, Créditos, Usuarios. Middleware `EnsureRole` bloquea el acceso (RNF-003).
+**El Empleado NO ve:** Dashboard financiero, Reportes, Productos, Categorías, Inventario,
+**cartera de Créditos** (`creditos.index`), **eliminar/restaurar clientes**, Usuarios.
+Middleware `EnsureRole` + Policies bloquean el acceso (RNF-003).
 
 ---
 
@@ -75,7 +81,8 @@ Los requisitos no eran explícitos en estos puntos; resueltos con el usuario en 
 
 | # | Pregunta | Decisión |
 |---|----------|----------|
-| **G1** | ¿Puede el Empleado registrar ventas a **crédito** / usar **saldo a favor** / elegir un **cliente**? | **Sí:** puede seleccionar un cliente existente, registrar venta a crédito (sujeta al bloqueo por mora, que él no puede saltar) y aplicar saldo a favor. **No puede crear ni editar clientes** — eso queda en el módulo Clientes del Administrador. |
+| **G1** | ¿Puede el Empleado registrar ventas a **crédito** / usar **saldo a favor** / elegir un **cliente**? | **Sí:** puede seleccionar un cliente existente, registrar venta a crédito (sujeta al bloqueo por mora, que él no puede saltar) y aplicar saldo a favor. |
+| **G1-bis** *(revisada 2026-08-29 a petición del negocio)* | ¿Puede el Empleado **gestionar clientes** y **registrar abonos**? | **Sí, con límites:** (a) crear, consultar y **editar** clientes (los necesita en el mostrador para no duplicarlos y verificar el saldo antes de vender); **eliminar/restaurar** siguen siendo solo del Administrador. (b) registrar **abonos** de ventas a crédito **que él mismo registró** (RN-08); la **cartera de crédito** (`creditos.index`, visión agregada de la deuda de todos) sigue siendo solo del Administrador. Encapsulado en `ClientePolicy` y `VentaPolicy::abonar()`. |
 | **G2** | ¿Puede el Empleado **anular** una venta? | **Sí, pero solo ventas registradas por él y aún no entregadas.** El Administrador puede anular cualquiera. |
 | **G3** | ¿Puede el Empleado marcar una venta como **entregada**? | **Sí.** La entrega es una acción operativa del punto de venta, no administrativa. |
 | **G4** | ¿Existe un **descuento máximo** que el Empleado puede aplicar sin autorización? | **MVP: sin límite**, se registra el precio real tal cual. Pendiente de negocio (Requisitos §12): si el negocio define un tope, se añade una validación. |

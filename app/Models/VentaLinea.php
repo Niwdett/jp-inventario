@@ -16,9 +16,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  *
  * `costo_unitario_snapshot` e `importe_linea` se fijan al confirmar la venta y
  * no cambian nunca: son la base permanente e inmutable del cálculo de ganancia
- * (RN-04, RN-05). Los escribe {@see RegistrarVenta}.
+ * (RN-04, RN-05). Los escribe {@see RegistrarVenta} por asignación directa, por
+ * eso **no son fillable** (igual que `variantes.stock` / `ventas.total`).
  */
-#[Fillable(['venta_id', 'variante_id', 'cantidad', 'precio_unitario', 'descuento_porcentaje', 'costo_unitario_snapshot', 'importe_linea'])]
+#[Fillable(['venta_id', 'variante_id', 'cantidad', 'precio_unitario', 'descuento_porcentaje'])]
 class VentaLinea extends Model
 {
     /** @use HasFactory<VentaLineaFactory> */

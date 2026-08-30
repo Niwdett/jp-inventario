@@ -5,10 +5,13 @@ namespace App\Models;
 use App\Enums\MetodoPago;
 use Database\Factories\ClienteFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\Scope;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
 
 /**
  * Cliente del negocio (RF-013).
@@ -105,7 +108,28 @@ class Cliente extends Model
     public function estaEnMora(): bool
     {
         return $this->ventasACredito()
-            ->where('fecha_venta', '<', now()->subDays(self::DIAS_MORA))
+            ->where('fecha_venta', '<', $this->limiteMora())
             ->exists();
+    }
+
+    /**
+     * Clientes en mora (RN-09). Única definición SQL de la regla: la comparten el
+     * dashboard y el selector de clientes de la pantalla de venta.
+     */
+    #[Scope]
+    protected function enMora(Builder $query): void
+    {
+        $query->whereHas('ventas', fn (Builder $venta) => $venta
+            ->where('metodo_pago', MetodoPago::Credito)
+            ->where('credito_saldo_pendiente', '>', 0)
+            ->where('fecha_venta', '<', self::limiteMora()));
+    }
+
+    /**
+     * Fecha a partir de la cual una venta a crédito impaga cuenta como mora.
+     */
+    public static function limiteMora(): Carbon
+    {
+        return now()->subDays(self::DIAS_MORA);
     }
 }

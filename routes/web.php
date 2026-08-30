@@ -49,6 +49,25 @@ Route::middleware(['auth', 'rol:administrador,empleado'])
     });
 
 /*
+ * Clientes y abonos. Empleado y Administrador; la autorización fina la deciden
+ * la ClientePolicy y la VentaPolicy (decisión G1 revisada 2026-08-29): el
+ * Empleado puede crear/consultar/editar clientes y registrar abonos de las
+ * ventas a crédito que él mismo hizo (RN-08). Eliminar/restaurar clientes y el
+ * listado de cartera (`creditos.index`) siguen siendo solo del Administrador.
+ */
+Route::middleware(['auth', 'rol:administrador,empleado'])
+    ->prefix('admin')
+    ->name('admin.')
+    ->group(function () {
+        Route::resource('clientes', ClienteController::class);
+        Route::patch('clientes/{cliente}/restaurar', [ClienteController::class, 'restore'])
+            ->withTrashed()
+            ->name('clientes.restore');
+
+        Route::post('creditos/{venta}/abonos', [CreditoController::class, 'abonar'])->name('creditos.abonos.store');
+    });
+
+/*
  * Módulos administrativos. Requieren sesión y rol Administrador (RF-001, RF-002).
  */
 Route::middleware(['auth', 'rol:administrador'])
@@ -65,14 +84,9 @@ Route::middleware(['auth', 'rol:administrador'])
             ->withTrashed()
             ->name('categorias.restore');
 
-        Route::resource('clientes', ClienteController::class);
-        Route::patch('clientes/{cliente}/restaurar', [ClienteController::class, 'restore'])
-            ->withTrashed()
-            ->name('clientes.restore');
-
-        // Créditos y abonos (RF-014).
+        // Cartera de crédito (RF-014). El registro de abonos vive arriba (lo
+        // comparte el Empleado); este listado es solo del Administrador.
         Route::get('creditos', [CreditoController::class, 'index'])->name('creditos.index');
-        Route::post('creditos/{venta}/abonos', [CreditoController::class, 'abonar'])->name('creditos.abonos.store');
 
         // Devoluciones tras la entrega (RF-011).
         Route::get('devoluciones', [DevolucionController::class, 'index'])->name('devoluciones.index');

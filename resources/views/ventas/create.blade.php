@@ -86,7 +86,13 @@
 
                     <div class="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                            <x-input-label for="cliente_id" :value="__('Cliente')" />
+                            <div class="flex items-center justify-between">
+                                <x-input-label for="cliente_id" :value="__('Cliente')" />
+                                @can('create', \App\Models\Cliente::class)
+                                    <a href="{{ route('admin.clientes.create') }}" target="_blank"
+                                       class="text-xs text-indigo-600 hover:text-indigo-900">+ {{ __('Registrar cliente') }}</a>
+                                @endcan
+                            </div>
                             <select id="cliente_id" name="cliente_id" x-model="cliente_id"
                                     class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">
                                 <option value="">{{ __('— Sin cliente (contado) —') }}</option>

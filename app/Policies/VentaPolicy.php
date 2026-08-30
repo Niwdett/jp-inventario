@@ -2,6 +2,7 @@
 
 namespace App\Policies;
 
+use App\Enums\EstadoVenta;
 use App\Models\User;
 use App\Models\Venta;
 
@@ -14,6 +15,10 @@ use App\Models\Venta;
  *   RF-010) y además es propia — salvo el Administrador, que puede cualquiera.
  * - Marcar entregada (G3): una venta confirmada y no entregada, propia o
  *   cualquiera si es Administrador.
+ * - Registrar abonos (RF-014, decisión revisada 2026-08-29): una venta a crédito
+ *   confirmada con saldo pendiente, propia o cualquiera si es Administrador. El
+ *   Empleado no ve el listado de cartera (`creditos.index`, solo Admin); llega
+ *   al abono desde la ficha de la venta.
  *
  * No se usa `before()` para el Administrador: la guarda de estado
  * (`esAnulable`, `puedeEntregarse`) debe aplicarle también.
@@ -43,6 +48,14 @@ class VentaPolicy
     public function entregar(User $user, Venta $venta): bool
     {
         return $venta->puedeEntregarse() && $this->esPropiaOEsAdmin($user, $venta);
+    }
+
+    public function abonar(User $user, Venta $venta): bool
+    {
+        return $venta->esCredito()
+            && $venta->estado === EstadoVenta::Confirmada
+            && bccomp((string) $venta->credito_saldo_pendiente, '0', 2) > 0
+            && $this->esPropiaOEsAdmin($user, $venta);
     }
 
     private function esPropiaOEsAdmin(User $user, Venta $venta): bool

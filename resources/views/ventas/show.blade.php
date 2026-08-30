@@ -130,7 +130,7 @@
                         </table>
                     @endif
 
-                    @if (auth()->user()->esAdministrador() && (float) $venta->credito_saldo_pendiente > 0 && $venta->estado === \App\Enums\EstadoVenta::Confirmada)
+                    @can('abonar', $venta)
                         <form method="POST" action="{{ route('admin.creditos.abonos.store', $venta) }}" class="mt-4 flex flex-wrap items-end gap-3">
                             @csrf
                             <div>
@@ -147,7 +147,7 @@
                             </div>
                             <x-primary-button>{{ __('Registrar abono') }}</x-primary-button>
                         </form>
-                    @endif
+                    @endcan
                 </div>
             @endif
 

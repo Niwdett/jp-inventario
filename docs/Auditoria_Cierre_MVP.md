@@ -92,8 +92,8 @@ Ningún requisito se marcó cumplido solo por existir un controlador o una vista
 
 | ID | Severidad | Hallazgo |
 |----|-----------|----------|
-| D-1 | Bajo | **`costo_unitario_snapshot` e `importe_linea` en `#[Fillable]` de `VentaLinea`.** Hoy no existe ningún flujo que actualice líneas de venta, pero tenerlos en la lista de asignación masiva deja abierta la puerta a mutar la base de la ganancia si se añade un endpoint de edición. Quitarlos es defensa en profundidad sin coste. |
-| D-2 | Bajo | **`VentaController@entregar` sin re-autorización bajo lock.** La autorización y el `save()` ocurren fuera de transacción. No es un fallo de permisos, pero sí de integridad — detallado en E-2. |
+| D-1 | ~~Bajo~~ **RESUELTO (2026-08-29)** | `costo_unitario_snapshot` e `importe_linea` ya no están en `#[Fillable]` de `VentaLinea`; `RegistrarVenta` los fija por asignación directa. |
+| D-2 | ~~Bajo~~ **RESUELTO (2026-08-29)** | `VentaController@entregar` ahora corre en transacción con `lockForUpdate` y recheck bajo el lock (ver E-2). |
 | D-3 | Bajo | **Sin tope de descuento del Empleado.** El campo *Desc. %* del formulario de venta acepta hasta 100 sin límite por rol. Decisión de negocio pospuesta (G4), no fallo técnico, pero un vendedor puede registrar una venta con 100% de descuento. |
 | D-4 | Bajo | **Endurecimiento de despliegue (no verificable aquí).** Confirmar en el hosting: `APP_DEBUG=false`, `APP_ENV=production`, HTTPS forzado, `SESSION_SECURE_COOKIE=true`. La extensión `intl` no está cargada y el log tiene un error antiguo de `Number::format`; no hay uso actual, pero tenerlo presente si se adopta `Number::currency`. |
 
@@ -133,9 +133,9 @@ Estrategia acordada, verificada línea a línea en `RegistrarVenta`, `AnularVent
 Antes: no había ruta de edición ni de anulación de `entradas_inventario`. Con promedio ponderado móvil, un `costo_unitario` equivocado recalcula `costo_promedio` mezclándolo con el stock existente, y un ajuste posterior solo toca la cantidad, no el costo.
 *Solución implementada:* operación **"anular entrada"** (`AnularEntrada` + `ReconstruirCostoVariante`, ruta `PATCH admin/inventario/entradas/{entrada}/anular`, solo Admin). La entrada se marca anulada (nunca se borra), `costo_promedio`/`stock` se **reconstruyen reproduciendo el ledger completo** de la variante, y se anexa un movimiento `anulacion_entrada`. Guardas: doble anulación y stock negativo (exige ajuste físico previo). `venta_lineas` intacto → ganancias históricas inmutables. Ver `Decisiones_Tecnicas_JP.md §A4` y `AnularEntradaTest`.
 
-**E-2 · Medio — `entregar` no es transaccional.**
-`VentaController@entregar` hace `$venta->forceFill(['entregada_at' => now()])->save()` sin `DB::transaction`, sin `lockForUpdate` y sin volver a comprobar el estado bajo el lock. En una carrera con `anular`, la anulación puede confirmarse primero y `entregar` escribir después sobre una venta ya anulada → registro con `estado = anulada` *y* `entregada_at` poblado.
-*Impacto real bajo:* no afecta stock ni dinero, y las operaciones posteriores (re-anular, devolver) están bloqueadas por sus propios checks de estado. Pero es un registro inconsistente que ensucia la auditoría y contradice la separación "anulación antes / devolución después". `entregar || entregar` también hace doble escritura (inocua).
+**E-2 · Medio — `entregar` no es transaccional. → RESUELTO (2026-08-29).**
+Antes: `VentaController@entregar` hacía `$venta->forceFill(['entregada_at' => now()])->save()` sin transacción, sin `lockForUpdate` y sin recheck bajo el lock. En una carrera con `anular`, la anulación podía confirmarse primero y `entregar` escribir después sobre una venta ya anulada.
+*Solución:* `entregar` corre en `DB::transaction` con `lockForUpdate` sobre la venta y revalida `puedeEntregarse()` bajo el lock; si el estado cambió lanza `VentaNoEntregableException` y responde con `back()->with('error', ...)`. El test de la carrera con dos conexiones queda para el paso 6 del plan L.
 
 **E-3 · Bajo — Sin comando de reconciliación stock ↔ ledger.**
 El invariante se cumple hoy, pero no hay verificación automatizada ni corrección asistida (pendiente heredado #2). Recomendado antes de operar con datos reales, junto con la reconciliación de `saldo_favor` y `credito_saldo_pendiente` contra sus ledgers.
@@ -205,13 +205,13 @@ Todos pasan, pero hay huecos relevantes. No se agregaron aún; solo se identific
 
 ### 🟠 Recomendados antes de producción
 
-2. **Hacer `entregar` transaccional** (`DB::transaction` + `lockForUpdate` + recheck `puedeEntregarse()`). Cierra E-2 y D-2.
-3. **Comando de reconciliación** (`stock` vs último `stock_resultante`; `saldo_favor` y `credito_saldo_pendiente` vs sus ledgers). Solo lectura, con `--fix` opcional.
+2. ~~**Hacer `entregar` transaccional**~~ **HECHO (2026-08-29).** `VentaController@entregar` ahora envuelve `DB::transaction` + `lockForUpdate` + recheck `puedeEntregarse()` bajo el lock; si el estado cambió (anulación simultánea) lanza `VentaNoEntregableException` y responde con error amable. Cierra E-2.
+3. **Comando de reconciliación** (`stock` vs último `stock_resultante`; `saldo_favor` y `credito_saldo_pendiente` vs sus ledgers). Solo lectura, con `--fix` opcional. *(Reusar `ReconstruirCostoVariante` para la parte de inventario.)*
 4. **Cerrar las decisiones de negocio** con JP: interpretación de RN-05 (promedio ponderado), cómputo de la mora (RN-09), vencimiento del saldo a favor, tope de descuento del vendedor.
 5. **Idempotencia** de abono y de `venta.store`.
 6. **Checklist de despliegue** (`APP_DEBUG=false`, HTTPS, cookies seguras, backups de MySQL).
-7. **Quitar `costo_unitario_snapshot` e `importe_linea`** del `#[Fillable]` de `VentaLinea` (D-1).
-8. **Unificar la lógica de mora** en un solo lugar — hoy está copiada en `Cliente::estaEnMora()`, `DashboardController` y `VentaController@create`.
+7. ~~**Quitar `costo_unitario_snapshot` e `importe_linea`** del `#[Fillable]` de `VentaLinea`~~ **HECHO (2026-08-29).** Fuera del `#[Fillable]`; `RegistrarVenta` los fija por asignación directa (D-1).
+8. ~~**Unificar la lógica de mora**~~ **HECHO (2026-08-29).** Scope `Cliente::enMora()` + `Cliente::limiteMora()` como única definición; `DashboardController` y `VentaController@create` la consumen. `Cliente::estaEnMora()` (instancia) usa el mismo `limiteMora()`.
 
 ### 🟡 Mejoras posteriores
 
@@ -260,14 +260,14 @@ No se modificó ningún documento. Estas correcciones deberían aplicarse junto 
 
 1. **Reunión de decisiones con JP.** Cerrar: (a) ¿se acepta el promedio ponderado móvil como método de costeo? (b) ¿la mora se cuenta desde la fecha de venta o hace falta un plazo formal? (c) ¿vence el saldo a favor? (d) ¿tope de descuento del vendedor? Estas respuestas condicionan los pasos 2 y 9.
 2. ~~**🔴 Corrección de entradas de inventario.**~~ **HECHO (2026-08-29, rama `feat/a4-anular-entradas`).** Decisión A4 + `AnularEntrada`/`ReconstruirCostoVariante` + 11 tests. La carga de inventario real ya no está bloqueada.
-3. **🟠 `entregar` transaccional** + test de la carrera `entregar`/`anular`.
+3. ~~**🟠 `entregar` transaccional**~~ **HECHO (2026-08-29).** El test de la carrera real necesita 2 conexiones (paso 6).
 4. **🟠 Comando de reconciliación** stock ↔ ledger y saldos ↔ ledger, con `--fix` opcional.
 5. **🟠 Idempotencia** de abono y de `venta.store`.
 6. **Tests de concurrencia** (dos conexiones) para venta, anulación y aplicación de saldo a favor.
-7. **Limpieza dirigida** — no refactor: unificar la lógica de mora, quitar los `fillable` de más en `VentaLinea`, helper de moneda.
+7. ~~**Limpieza dirigida**~~ **PARCIAL (2026-08-29):** mora unificada (`Cliente::enMora()`), `fillable` de más quitados en `VentaLinea`. Falta: helper de moneda sin `(float)`.
 8. **Endurecimiento de despliegue:** checklist de `.env` de producción, HTTPS, cookies seguras, backups de MySQL.
-9. **Actualizar documentación:** texto de RN-05 y RN-15, handoff (202 tests) y registro de las decisiones del paso 1.
-10. **Merge `feat/sprint5` → `main` + push.** Puede adelantarse si se prefiere congelar el MVP funcional y trabajar el endurecimiento sobre `main`.
+9. **Actualizar documentación:** texto de RN-05 y RN-15, y registro de las decisiones del paso 1.
+10. ~~**Merge `feat/sprint5` → `main` + push.**~~ **MERGEADO a `main` local (2026-08-29, `98dbeb4`)** — falta `git push`. Encima se añadió la decisión **G1-bis** (permisos de Empleado: gestión de clientes + abonos de ventas propias).
 11. Luego: **Fase 9** (despliegue) y **Fase 10** (portafolio).
 
 ---

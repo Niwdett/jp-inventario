@@ -114,13 +114,17 @@ Puede:
 
 - Buscar productos.
 - Consultar stock.
-- Registrar ventas.
+- Registrar ventas (incluidas las ventas a crédito y el uso de saldo a favor).
 - Registrar el precio real permitido por las reglas del negocio.
 - Utilizar el módulo de ventas.
+- Gestionar clientes: crear, consultar y editar (decisión G1-bis, 2026-08-29).
+  **No** puede eliminar ni restaurar clientes.
+- Registrar abonos de las ventas a crédito **que él mismo registró** (RN-08).
 
-No puede acceder a funciones administrativas ni reportes financieros.
+No puede acceder a funciones administrativas ni reportes financieros, ni a la
+cartera de crédito agregada (`creditos.index`), ni saltar el bloqueo por mora.
 
-Toda venta debe quedar asociada al usuario que la registró.
+Toda venta y todo abono deben quedar asociados al usuario que los registró.
 
 ---
 
