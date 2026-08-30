@@ -207,7 +207,7 @@ Todos pasan, pero hay huecos relevantes. No se agregaron aún; solo se identific
 
 2. ~~**Hacer `entregar` transaccional**~~ **HECHO (2026-08-29).** `VentaController@entregar` ahora envuelve `DB::transaction` + `lockForUpdate` + recheck `puedeEntregarse()` bajo el lock; si el estado cambió (anulación simultánea) lanza `VentaNoEntregableException` y responde con error amable. Cierra E-2.
 3. **Comando de reconciliación** (`stock` vs último `stock_resultante`; `saldo_favor` y `credito_saldo_pendiente` vs sus ledgers). Solo lectura, con `--fix` opcional. *(Reusar `ReconstruirCostoVariante` para la parte de inventario.)*
-4. **Cerrar las decisiones de negocio** con JP: interpretación de RN-05 (promedio ponderado), cómputo de la mora (RN-09), vencimiento del saldo a favor, tope de descuento del vendedor.
+4. ~~**Cerrar las decisiones de negocio** con JP~~ **HECHO (2026-08-29):** promedio ponderado móvil confirmado (RN-05 reescrito); mora = 15 días desde `fecha_venta`; saldo a favor **no vence**; descuento del vendedor **sin tope**. Ver `Documento_Requisitos_Software_JP.md §12`.
 5. **Idempotencia** de abono y de `venta.store`.
 6. **Checklist de despliegue** (`APP_DEBUG=false`, HTTPS, cookies seguras, backups de MySQL).
 7. ~~**Quitar `costo_unitario_snapshot` e `importe_linea`** del `#[Fillable]` de `VentaLinea`~~ **HECHO (2026-08-29).** Fuera del `#[Fillable]`; `RegistrarVenta` los fija por asignación directa (D-1).
@@ -230,12 +230,10 @@ Todos pasan, pero hay huecos relevantes. No se agregaron aún; solo se identific
 
 ## J. Contradicciones documentación ↔ código
 
-1. **RN-05 (texto) vs decisión A1.** El requisito dice "no actualiza el costo de las unidades ya existentes en inventario"; el promedio ponderado móvil sí combina costo viejo y nuevo para las unidades *aún en stock*. `Decisiones_Tecnicas_JP.md §A1` lo reinterpreta como "no modifica `venta_lineas` existentes". Divergencia consciente y razonada, pero el texto de RN-05 debería actualizarse para reflejar la interpretación aceptada.
-2. **RN-15 (texto) vs implementación.** El texto dice "no se registra trazabilidad (usuario y fecha)"; el código sí guarda fecha (`created_at` en `ajustes_inventario` y `movimientos_inventario`) y `motivo`. Solo omite el usuario. El texto debería decir "no se registra el usuario".
-3. **Handoff desactualizado.** `memory/project-status.md` dice "Suite Pest en verde (201 tests)"; hoy son 202. Menor.
+1. ~~**RN-05 (texto) vs decisión A1.**~~ **RESUELTO (2026-08-29).** El negocio confirmó el promedio ponderado móvil; el texto de RN-05 en `Documento_Requisitos_Software_JP.md` se reescribió para reflejarlo (costo de ventas congelado + promedio móvil para el stock en existencia).
+2. ~~**RN-15 (texto) vs implementación.**~~ **RESUELTO (2026-08-29).** Texto reescrito: los ajustes no registran usuario (sí fecha y motivo); la anulación de entrada §A4 sí registra usuario.
+3. **Handoff desactualizado.** Corregido en `memory/project-status.md` (hoy 220 tests).
 4. **Sin contradicciones** en: modo oscuro fuera de alcance (no implementado), G3 "marcar entregada" acotado a "propia o admin" (coincide), Sprint 5 sin reporte de cartera separado — los indicadores viven en el dashboard (coincide), modelo de pago "un método por venta + saldo aparte" (consistente entre enum, migración y servicio).
-
-No se modificó ningún documento. Estas correcciones deberían aplicarse junto con el registro de las decisiones de negocio del plan L.
 
 ---
 
@@ -258,7 +256,7 @@ No se modificó ningún documento. Estas correcciones deberían aplicarse junto 
 
 ## L. Plan recomendado (Fase 8 — sin implementar todavía)
 
-1. **Reunión de decisiones con JP.** Cerrar: (a) ¿se acepta el promedio ponderado móvil como método de costeo? (b) ¿la mora se cuenta desde la fecha de venta o hace falta un plazo formal? (c) ¿vence el saldo a favor? (d) ¿tope de descuento del vendedor? Estas respuestas condicionan los pasos 2 y 9.
+1. ~~**Reunión de decisiones con JP.**~~ **HECHO (2026-08-29):** (a) promedio ponderado móvil **aceptado**; (b) mora = **15 días desde la fecha de venta** (sin plazo formal); (c) el saldo a favor **no vence**; (d) descuento del vendedor **sin tope**. Nada de esto requiere cambios de código; solo de texto en los docs (paso 9).
 2. ~~**🔴 Corrección de entradas de inventario.**~~ **HECHO (2026-08-29, rama `feat/a4-anular-entradas`).** Decisión A4 + `AnularEntrada`/`ReconstruirCostoVariante` + 11 tests. La carga de inventario real ya no está bloqueada.
 3. ~~**🟠 `entregar` transaccional**~~ **HECHO (2026-08-29).** El test de la carrera real necesita 2 conexiones (paso 6).
 4. **🟠 Comando de reconciliación** stock ↔ ledger y saldos ↔ ledger, con `--fix` opcional.
@@ -266,7 +264,7 @@ No se modificó ningún documento. Estas correcciones deberían aplicarse junto 
 6. **Tests de concurrencia** (dos conexiones) para venta, anulación y aplicación de saldo a favor.
 7. ~~**Limpieza dirigida**~~ **PARCIAL (2026-08-29):** mora unificada (`Cliente::enMora()`), `fillable` de más quitados en `VentaLinea`. Falta: helper de moneda sin `(float)`.
 8. **Endurecimiento de despliegue:** checklist de `.env` de producción, HTTPS, cookies seguras, backups de MySQL.
-9. **Actualizar documentación:** texto de RN-05 y RN-15, y registro de las decisiones del paso 1.
+9. ~~**Actualizar documentación:** texto de RN-05 y RN-15, decisiones del paso 1.~~ **HECHO (2026-08-29).**
 10. ~~**Merge `feat/sprint5` → `main` + push.**~~ **MERGEADO a `main` local (2026-08-29, `98dbeb4`)** — falta `git push`. Encima se añadió la decisión **G1-bis** (permisos de Empleado: gestión de clientes + abonos de ventas propias).
 11. Luego: **Fase 9** (despliegue) y **Fase 10** (portafolio).
 
