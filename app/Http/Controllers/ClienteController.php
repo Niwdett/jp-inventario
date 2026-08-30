@@ -9,9 +9,9 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 
 /**
- * Gestión de clientes (RF-013). Solo Administrador — protegido por el middleware
- * `rol:administrador` en las rutas. El Empleado puede elegir un cliente existente
- * al registrar una venta, pero no crearlo ni editarlo (decisión G1).
+ * Gestión de clientes (RF-013). Empleado y Administrador; la {@see ClientePolicy}
+ * decide el detalle (decisión G1 revisada 2026-08-29): el Empleado puede crear,
+ * consultar y editar clientes, pero **no** eliminarlos ni restaurarlos.
  *
  * "Eliminar" es un soft-delete y solo se permite si el cliente no tiene crédito
  * pendiente ni saldo a favor sin consumir (punto 6, Sprint 4). La `cedula` de un
@@ -22,6 +22,8 @@ class ClienteController extends Controller
 {
     public function index(): View
     {
+        $this->authorize('viewAny', Cliente::class);
+
         $clientes = Cliente::withTrashed()
             ->withCount('ventasACredito')
             ->orderBy('nombre')
@@ -34,6 +36,8 @@ class ClienteController extends Controller
 
     public function create(): View
     {
+        $this->authorize('create', Cliente::class);
+
         return view('admin.clientes.create');
     }
 
@@ -48,6 +52,8 @@ class ClienteController extends Controller
 
     public function show(Cliente $cliente): View
     {
+        $this->authorize('view', $cliente);
+
         $cliente->load([
             'saldoFavorMovimientos' => fn ($query) => $query->latest('id'),
             'ventasACredito' => fn ($query) => $query->latest('fecha_venta')->latest('id'),
@@ -58,6 +64,8 @@ class ClienteController extends Controller
 
     public function edit(Cliente $cliente): View
     {
+        $this->authorize('update', $cliente);
+
         return view('admin.clientes.edit', compact('cliente'));
     }
 
@@ -72,6 +80,8 @@ class ClienteController extends Controller
 
     public function destroy(Cliente $cliente): RedirectResponse
     {
+        $this->authorize('delete', $cliente);
+
         if (! $cliente->puedeEliminarse()) {
             return back()->with('error', 'No se puede eliminar un cliente con crédito pendiente o saldo a favor.');
         }
@@ -85,6 +95,8 @@ class ClienteController extends Controller
 
     public function restore(Cliente $cliente): RedirectResponse
     {
+        $this->authorize('restore', $cliente);
+
         $cliente->restore();
 
         return redirect()

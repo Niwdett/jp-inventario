@@ -8,7 +8,7 @@ class StoreAbonoRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->esAdministrador() ?? false;
+        return $this->user()?->can('abonar', $this->route('venta')) ?? false;
     }
 
     /**

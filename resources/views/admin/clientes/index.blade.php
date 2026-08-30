@@ -63,21 +63,29 @@
                                 <td class="px-6 py-4">
                                     <div class="flex items-center justify-end gap-3">
                                         @if ($cliente->trashed())
-                                            <form method="POST" action="{{ route('admin.clientes.restore', $cliente) }}">
-                                                @csrf
-                                                @method('PATCH')
-                                                <button class="text-indigo-600 hover:text-indigo-900">{{ __('Restaurar') }}</button>
-                                            </form>
+                                            @can('restore', $cliente)
+                                                <form method="POST" action="{{ route('admin.clientes.restore', $cliente) }}">
+                                                    @csrf
+                                                    @method('PATCH')
+                                                    <button class="text-indigo-600 hover:text-indigo-900">{{ __('Restaurar') }}</button>
+                                                </form>
+                                            @else
+                                                <span class="text-gray-400">—</span>
+                                            @endcan
                                         @else
-                                            <a href="{{ route('admin.clientes.edit', $cliente) }}"
-                                               class="text-indigo-600 hover:text-indigo-900">{{ __('Editar') }}</a>
+                                            @can('update', $cliente)
+                                                <a href="{{ route('admin.clientes.edit', $cliente) }}"
+                                                   class="text-indigo-600 hover:text-indigo-900">{{ __('Editar') }}</a>
+                                            @endcan
 
-                                            <form method="POST" action="{{ route('admin.clientes.destroy', $cliente) }}"
-                                                  onsubmit="return confirm('¿Eliminar al cliente {{ $cliente->nombre }}?')">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button class="text-red-600 hover:text-red-900">{{ __('Eliminar') }}</button>
-                                            </form>
+                                            @can('delete', $cliente)
+                                                <form method="POST" action="{{ route('admin.clientes.destroy', $cliente) }}"
+                                                      onsubmit="return confirm('¿Eliminar al cliente {{ $cliente->nombre }}?')">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button class="text-red-600 hover:text-red-900">{{ __('Eliminar') }}</button>
+                                                </form>
+                                            @endcan
                                         @endif
                                     </div>
                                 </td>

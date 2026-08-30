@@ -85,20 +85,10 @@ class DashboardController extends Controller
             'ganancia_mes' => (string) $gananciaMes,
             'variantes_stock_bajo' => Variante::stockBajo()->count(),
             'credito_por_cobrar' => (string) Venta::where('metodo_pago', MetodoPago::Credito)->sum('credito_saldo_pendiente'),
-            'clientes_en_mora' => $this->clientesEnMora(),
+            'clientes_en_mora' => Cliente::enMora()->count(),
             'saldo_favor_clientes' => (string) Cliente::sum('saldo_favor'),
             'top_productos' => $this->topProductosDelMes($inicioMes, $finMes),
         ];
-    }
-
-    private function clientesEnMora(): int
-    {
-        return Cliente::query()
-            ->whereHas('ventas', fn ($query) => $query
-                ->where('metodo_pago', MetodoPago::Credito)
-                ->where('credito_saldo_pendiente', '>', 0)
-                ->where('fecha_venta', '<', now()->subDays(Cliente::DIAS_MORA)))
-            ->count();
     }
 
     /**

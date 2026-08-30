@@ -6,18 +6,21 @@ use App\Enums\MetodoPago;
 use App\Exceptions\AbonoInvalidoException;
 use App\Http\Requests\StoreAbonoRequest;
 use App\Models\Venta;
+use App\Policies\VentaPolicy;
 use App\Services\Creditos\RegistrarAbono;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Carbon;
 use Illuminate\View\View;
 
 /**
- * Créditos y abonos (RF-014; flujo 4.5). Solo Administrador — protegido por el
- * middleware `rol:administrador` en las rutas.
+ * Créditos y abonos (RF-014; flujo 4.5).
  *
- * La deuda es "una por venta" (C2): este módulo lista las ventas a crédito con
- * saldo pendiente y registra abonos parciales contra ellas. La lógica crítica
- * (transacción + bloqueo + guarda de no sobrepago) vive en {@see RegistrarAbono}.
+ * `index` (cartera de crédito) es solo del Administrador. `abonar` lo comparte el
+ * Empleado para las ventas a crédito que él mismo registró (RN-08): la
+ * {@see VentaPolicy::abonar()} decide.
+ *
+ * La deuda es "una por venta" (C2). La lógica crítica (transacción + bloqueo +
+ * guarda de no sobrepago) vive en {@see RegistrarAbono}.
  */
 class CreditoController extends Controller
 {

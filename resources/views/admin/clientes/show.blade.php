@@ -5,7 +5,9 @@
                 {{ __('Cliente') }}: {{ $cliente->nombre }}
             </h2>
             <div class="flex items-center gap-4">
-                <a href="{{ route('admin.clientes.edit', $cliente) }}" class="text-sm text-indigo-600 hover:text-indigo-900 underline">{{ __('Editar') }}</a>
+                @can('update', $cliente)
+                    <a href="{{ route('admin.clientes.edit', $cliente) }}" class="text-sm text-indigo-600 hover:text-indigo-900 underline">{{ __('Editar') }}</a>
+                @endcan
                 <a href="{{ route('admin.clientes.index') }}" class="text-sm text-gray-600 hover:text-gray-900 underline">{{ __('← Volver') }}</a>
             </div>
         </div>
