@@ -2,9 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Exceptions\EntradaNoAnulableException;
+use App\Exceptions\StockNegativoAlAnularEntradaException;
+use App\Http\Requests\AnularEntradaRequest;
 use App\Http\Requests\StoreEntradaInventarioRequest;
 use App\Models\EntradaInventario;
 use App\Models\Variante;
+use App\Services\Inventario\AnularEntrada;
 use App\Services\Inventario\RegistrarEntrada;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
@@ -13,13 +17,14 @@ use Illuminate\View\View;
  * Entradas de mercancía (RF-005). Solo Administrador.
  *
  * El registro (transacción + bloqueo + recálculo de costo promedio) vive en
- * el servicio {@see RegistrarEntrada}; el controlador solo valida y delega.
+ * el servicio {@see RegistrarEntrada}; la anulación (decisión A4) en
+ * {@see AnularEntrada}. El controlador solo valida y delega.
  */
 class EntradaInventarioController extends Controller
 {
     public function index(): View
     {
-        $entradas = EntradaInventario::with(['variante.producto', 'usuario'])
+        $entradas = EntradaInventario::with(['variante.producto', 'usuario', 'anuladaPor'])
             ->latest('fecha')
             ->latest('id')
             ->paginate(20);
@@ -51,5 +56,18 @@ class EntradaInventarioController extends Controller
         return redirect()
             ->route('admin.inventario.entradas.index')
             ->with('status', 'Entrada registrada y costo promedio actualizado.');
+    }
+
+    public function anular(AnularEntradaRequest $request, EntradaInventario $entrada, AnularEntrada $anular): RedirectResponse
+    {
+        try {
+            $resultado = $anular->ejecutar($entrada, $request->validated('motivo'), $request->user());
+        } catch (EntradaNoAnulableException|StockNegativoAlAnularEntradaException $e) {
+            return back()->with('error', $e->getMessage());
+        }
+
+        return redirect()
+            ->route('admin.inventario.entradas.index')
+            ->with('status', $resultado->mensaje());
     }
 }

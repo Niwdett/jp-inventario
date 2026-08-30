@@ -121,6 +121,119 @@ tiene casos especiales.
 
 ---
 
+### A4. Corrección de una entrada de inventario equivocada
+
+> **Contexto:** decisión tomada en la **Fase 8** (auditoría de cierre del MVP, 2026-08-29).
+> **Estado: IMPLEMENTADA** (2026-08-29, rama `feat/a4-anular-entradas`). Servicios
+> `App\Services\Inventario\AnularEntrada` y `ReconstruirCostoVariante`; ruta
+> `PATCH admin/inventario/entradas/{entrada}/anular`; 11 feature tests en
+> `tests/Feature/Admin/AnularEntradaTest.php`. Cierra el bloqueante 🔴 de RF-005.
+> Hasta aquí, `entradas_inventario` no tenía forma de editarse ni anularse: una entrada con
+> `costo_unitario` o `cantidad` mal tecleados contaminaba de forma permanente
+> `variantes.costo_promedio` (promedio ponderado móvil, A1) y, por tanto, la valoración de
+> inventario y la ganancia de todas las ventas futuras de esa variante. Este es el
+> bloqueante que debe resolverse **antes** de cargar inventario real.
+
+**Decisión:** se añade la operación **"anular entrada"** (nunca "editar"), con
+**reconstrucción de `costo_promedio` y `stock` reproduciendo el libro de movimientos** de la
+variante. Corregir una entrada = anularla y, si corresponde, registrar una nueva por el
+flujo normal.
+
+#### A4.1 — Mecanismo
+
+- La fila de `entradas_inventario` **no se borra jamás**. Se marca como anulada con
+  `anulada_at`, `anulada_por`, `motivo_anulacion` (espejo de la anulación de ventas, B2).
+- El movimiento `tipo = entrada` original **permanece** en `movimientos_inventario`
+  (libro append-only). Se **anexa** un movimiento compensatorio
+  `tipo = anulacion_entrada`, `cantidad = −(cantidad de la entrada)`,
+  `usuario_id =` el Administrador que anula, `referencia =` la `EntradaInventario`.
+- `variantes.costo_promedio` y `variantes.stock` se **reconstruyen** (ver A4.2). Nunca se
+  "deshace" el promedio con aritmética inversa.
+- Las líneas de venta (`venta_lineas.costo_unitario_snapshot`, `importe_linea`)
+  **no se tocan** → RN-05 intacto, ganancias históricas inmutables (A2). Solo cambian las
+  ventas futuras y la valoración de inventario en vivo (RF-018), que es el comportamiento
+  deseado.
+
+#### A4.2 — Reconstrucción por reproducción del ledger
+
+Se reproduce **siempre desde cero** el libro `movimientos_inventario` de la variante en
+orden de `id` (orden real en que ocurrieron los hechos; la `entradas_inventario.fecha` es
+informativa y no participa), llevando `(stock, costo_promedio)` paso a paso:
+
+| Movimiento | Efecto en la reproducción |
+|------------|---------------------------|
+| `entrada` (no anulada) | `costo = (stock · costo + cant · entrada.costo_unitario) / (stock + cant)`; `stock += cant` |
+| `entrada` anulada + su `anulacion_entrada` | se ignoran ambos (como si nunca hubieran ocurrido) |
+| `venta`, `anulacion` (de venta), `devolucion` | `stock += cantidad`; el costo **no cambia** |
+| `ajuste` | `stock = stock_resultante` (valor absoluto contado); el costo **no cambia** |
+
+- El `costo_unitario` se obtiene de `entradas_inventario` cruzando por la `referencia` del
+  movimiento (los movimientos no guardan costo).
+- Aritmética decimal (BCMath), nunca `float`. `costo_promedio` se redondea a 4 decimales
+  (`decimal(12,4)`), igual que en `RegistrarEntrada`.
+- Para el negocio real de JP son unas pocas decenas de movimientos por variante en toda su
+  vida: el coste de reproducir desde cero es irrelevante y evita casos borde de
+  reproducción parcial.
+- **Por qué el ledger completo y no solo las entradas:** el promedio ponderado en cada
+  entrada usa el *stock real en ese instante*, que las ventas intermedias reducen. Ignorar
+  las ventas daría un promedio equivocado.
+
+#### A4.3 — Guardas
+
+| # | Guarda | Comportamiento |
+|---|--------|----------------|
+| A4.a | La entrada ya está anulada (`anulada_at IS NOT NULL`) | Se rechaza (no hay doble anulación). |
+| A4.b | Durante la reproducción, el `stock` se vuelve **negativo** en algún punto (se vendió mercancía que solo existía por la entrada mala) | Se **rechaza** la anulación con un mensaje que indica cuántas unidades faltan; el Administrador debe reconciliar primero con un **ajuste por conteo físico** (RN-10) y luego anular. Nunca se deja stock negativo (además `variantes.stock` es `unsignedInteger`). |
+
+Una entrada **posterior** a la que se anula no bloquea nada: la reproducción recomputa su
+aporte contra el promedio corregido.
+
+#### A4.4 — Alcance, permisos y UX
+
+- Toda la operación ocurre en una **transacción** con `lockForUpdate` sobre la fila de la
+  variante (bloque B1), igual que `RegistrarEntrada`.
+- **Solo Administrador** (ruta bajo `rol:administrador`; `authorize()` en el Form Request).
+- `motivo` obligatorio (min 3, max 255).
+- Acción por fila en `admin.inventario.entradas.index` (botón "Anular" + confirmación).
+  **No** se crea página de detalle de entrada ni un botón "corregir" que encadene
+  anular + crear: a veces la corrección es "esta entrada no debió existir".
+- Las entradas anuladas siguen en el listado, atenuadas y con badge "Anulada".
+- Mensaje de resultado con el efecto concreto:
+  *"Entrada anulada. Costo promedio de <variante>: 45,0000 → 4,5000. Stock: 31 → 11."*
+
+#### A4.5 — Cambios que implica (para la fase de implementación)
+
+1. Migración: `anulada_at`, `anulada_por` (FK `users` nullOnDelete), `motivo_anulacion` en
+   `entradas_inventario`.
+2. Migración de enum: nuevo valor `anulacion_entrada` en `movimientos_inventario.tipo`
+   (`ALTER TABLE ... MODIFY`) + valor en `App\Enums\TipoMovimiento` (label
+   "Anulación de entrada").
+3. Servicio `App\Services\Inventario\AnularEntrada` (transacción + lock + reconstrucción +
+   guardas A4.a/A4.b + movimiento compensatorio).
+4. Método de reproducción reutilizable (útil también para el futuro comando de
+   reconciliación stock ↔ ledger — pendiente 🟠 de la auditoría).
+   → Implementado como `ReconstruirCostoVariante::calcular(Variante): array{stock,
+   costo_promedio, faltante}`. `faltante` es el déficit acumulado en el punto más
+   bajo de la reproducción (0 si nunca fue negativo); si es > 0, `AnularEntrada`
+   rechaza con `StockNegativoAlAnularEntradaException` y `stock`/`costo_promedio`
+   se descartan.
+5. Ruta `PATCH admin/inventario/entradas/{entrada}/anular`, acción en
+   `EntradaInventarioController`, `AnularEntradaRequest`, ajuste de la vista `index`.
+6. Modelo `EntradaInventario`: casts de fechas, relación `anuladaPor()`, helper
+   `esAnulable()`.
+7. Feature tests: anulación simple con recálculo; anulación con entrada posterior a distinto
+   costo (verifica la reproducción); guarda de doble anulación; guarda de stock negativo;
+   inmutabilidad de `venta_lineas.costo_unitario_snapshot`; el reporte de ganancias
+   histórico no cambia y el de inventario sí.
+8. `docs/`: actualizar la matriz de trazabilidad de RF-005 y esta sección al cerrar.
+
+**Reglas de negocio cubiertas:** RN-04, RN-05 (el snapshot histórico nunca cambia),
+RN-10 (la reconciliación de una discrepancia física sigue siendo el ajuste), RN-15 (el
+movimiento `anulacion_entrada` **sí** registra usuario — a diferencia del ajuste — porque no
+es un conteo físico sino una corrección de captura).
+
+---
+
 ## Bloque B — Integridad
 
 ### B1. Concurrencia / evitar sobreventa
