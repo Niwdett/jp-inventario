@@ -113,7 +113,7 @@ Consulta de ventas por periodo, inventario disponible y ganancias por venta y po
 | RN-02 | Una venta confirmada descuenta el inventario automáticamente y en tiempo real. |
 | RN-03 | Cada venta conserva el precio real al que se realizó la transacción, el cual puede diferir del precio de referencia del producto. |
 | RN-04 | La ganancia de una venta se calcula como precio real de venta menos el costo de compra de esa unidad específica. El resultado puede ser negativo. |
-| RN-05 | Cuando cambia el costo de compra de un producto con un proveedor, el nuevo costo aplica únicamente a las compras nuevas; no actualiza el costo de las unidades ya existentes en inventario. |
+| RN-05 | El costo de las unidades ya vendidas **nunca cambia**: cada línea de venta guarda el costo con el que se calculó su ganancia y ese valor queda congelado (RN-04). Para valorar el inventario **en existencia** y costear las ventas futuras, el sistema usa **promedio ponderado móvil**: cada entrada de mercancía recalcula el costo promedio de la variante combinando el costo del stock que ya había con el de las unidades que entran (confirmado con el negocio el 2026-08-29; detalle en `Decisiones_Tecnicas_JP.md §A1`). |
 | RN-06 | Solo el usuario con rol Administrador puede crear o modificar productos y precios, y realizar ajustes manuales de inventario. |
 | RN-07 | El usuario con rol Empleado/Vendedor puede consultar productos, ver la cantidad exacta de stock disponible y registrar ventas. |
 | RN-08 | Toda venta queda asociada al usuario que la registró. |
@@ -123,7 +123,7 @@ Consulta de ventas por periodo, inventario disponible y ganancias por venta y po
 | RN-12 | El saldo a favor puede utilizarse para adquirir otra u otras prendas de igual o menor valor; si el nuevo producto excede el saldo, el cliente completa la diferencia en dinero. |
 | RN-13 | La clasificación de un producto dañado como "vendible con rebaja" o "no vendible" es una decisión manual y exclusiva del Administrador. |
 | RN-14 | El umbral de alerta de "stock bajo" es configurable por producto; no existe un valor único global. |
-| RN-15 | No se registra trazabilidad (usuario y fecha) de los ajustes manuales de inventario, dado que únicamente el Administrador los realiza. |
+| RN-15 | Los ajustes manuales de inventario **no registran qué usuario** los hizo (solo el Administrador puede hacerlos); sí quedan con **fecha y motivo** (`ajustes_inventario`, `movimientos_inventario`). La anulación de una entrada (§A4) **sí** registra el usuario: es una corrección de captura, no un conteo físico. |
 
 ## 8. Requisitos funcionales
 
@@ -194,13 +194,20 @@ Consulta de ventas por periodo, inventario disponible y ganancias por venta y po
 
 ## 12. Requisitos pendientes
 
+### Decisiones tomadas (2026-08-29)
+
+- **Costeo (RN-05):** promedio ponderado móvil, con el costo de cada venta congelado. Ver RN-05 y `Decisiones_Tecnicas_JP.md §A1`.
+- **Mora (RN-09):** el atraso se cuenta como **> 15 días desde la fecha de la venta** (no hay plazo formal pactado por venta). `Cliente::DIAS_MORA = 15`.
+- **Vencimiento del saldo a favor:** **no vence**; queda disponible hasta que el cliente lo use. Sí puede combinarse con una compra a crédito (cerrado en Sprint 4).
+- **Descuento del Empleado (RF-008 / decisión G4):** **sin tope**; se registra el precio real pactado y queda asociado al vendedor que lo hizo.
+- **Sobreventa simultánea:** resuelta con transacción + bloqueo pesimista + guarda de stock no negativo (`Decisiones_Tecnicas_JP.md §B1`).
+
+### Aún abiertos
+
 - Si la anulación de una venta aplica sin límite de tiempo desde la entrega, o si debe restringirse pasado cierto periodo.
-- Si el saldo a favor tiene vencimiento y si puede combinarse con una compra a crédito.
-- El valor exacto del límite máximo de crédito por cliente (RF-024).
+- El valor exacto del límite máximo de crédito por cliente (RF-024, V2).
 - La nomenclatura completa del código interno de producto (color y talla), más allá del prefijo por categoría ya definido.
 - El criterio exacto de "uso prolongado" para rechazar una devolución (referencia actual: 2 días, no confirmada).
-- La forma de evitar la sobreventa cuando dos ventas ocurren de forma simultánea sobre el mismo producto o variante.
-- Si existe un precio mínimo permitido o un descuento máximo autorizado para el Empleado al registrar el precio real de una venta.
 - El canal de notificación externo (WhatsApp u otro) para las alertas de stock bajo.
 
 ## 13. Matriz de trazabilidad / prioridad
