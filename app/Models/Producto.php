@@ -2,8 +2,10 @@
 
 namespace App\Models;
 
+use App\Observers\ProductoObserver;
 use Database\Factories\ProductoFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -18,6 +20,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * prefijo de la categoría y no se edita después; la categoría tampoco cambia
  * tras el alta (el código quedaría inconsistente con el prefijo).
  */
+#[ObservedBy(ProductoObserver::class)]
 #[Fillable(['categoria_id', 'nombre', 'marca', 'codigo_interno', 'precio_referencia', 'foto', 'umbral_stock_bajo', 'proveedor'])]
 class Producto extends Model
 {
@@ -79,6 +82,16 @@ class Producto extends Model
     public function variantes(): HasMany
     {
         return $this->hasMany(Variante::class);
+    }
+
+    /**
+     * Historial de modificaciones del producto (RF-016). Solo lectura.
+     *
+     * @return HasMany<ProductoHistorial, $this>
+     */
+    public function historial(): HasMany
+    {
+        return $this->hasMany(ProductoHistorial::class);
     }
 
     /**

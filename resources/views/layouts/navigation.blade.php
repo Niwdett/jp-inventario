@@ -39,6 +39,9 @@
                         <x-nav-link :href="route('admin.devoluciones.index')" :active="request()->routeIs('admin.devoluciones.*')">
                             {{ __('Devoluciones') }}
                         </x-nav-link>
+                        <x-nav-link :href="route('admin.reportes.ventas')" :active="request()->routeIs('admin.reportes.*')">
+                            {{ __('Reportes') }}
+                        </x-nav-link>
                         <x-nav-link :href="route('admin.usuarios.index')" :active="request()->routeIs('admin.usuarios.*')">
                             {{ __('Usuarios') }}
                         </x-nav-link>
@@ -121,6 +124,9 @@
                 </x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('admin.devoluciones.index')" :active="request()->routeIs('admin.devoluciones.*')">
                     {{ __('Devoluciones') }}
+                </x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('admin.reportes.ventas')" :active="request()->routeIs('admin.reportes.*')">
+                    {{ __('Reportes') }}
                 </x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('admin.usuarios.index')" :active="request()->routeIs('admin.usuarios.*')">
                     {{ __('Usuarios') }}

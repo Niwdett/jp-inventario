@@ -10,6 +10,11 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 /**
  * Entrada de mercancía (RF-005). Registro histórico e inmutable de una compra;
  * al crearse recalcula `variantes.costo_promedio` (promedio ponderado móvil, A1).
+ *
+ * Una entrada mal capturada no se edita ni se borra: se **anula** (decisión A4).
+ * `cantidad` y `costo_unitario` siguen siendo la auditoría del recálculo; la
+ * anulación se marca con `anulada_at`/`anulada_por`/`motivo_anulacion` y
+ * `variantes.costo_promedio`/`stock` se reconstruyen reproduciendo el ledger.
  */
 #[Fillable(['variante_id', 'usuario_id', 'cantidad', 'costo_unitario', 'fecha', 'proveedor'])]
 class EntradaInventario extends Model
@@ -25,7 +30,16 @@ class EntradaInventario extends Model
             'cantidad' => 'integer',
             'costo_unitario' => 'decimal:4',
             'fecha' => 'date',
+            'anulada_at' => 'datetime',
         ];
+    }
+
+    /**
+     * ¿La entrada puede anularse todavía? (guarda A4.a: no hay doble anulación).
+     */
+    public function esAnulable(): bool
+    {
+        return $this->anulada_at === null;
     }
 
     /**
@@ -42,6 +56,16 @@ class EntradaInventario extends Model
     public function usuario(): BelongsTo
     {
         return $this->belongsTo(User::class, 'usuario_id');
+    }
+
+    /**
+     * Administrador que anuló la entrada (decisión A4). NULL si sigue vigente.
+     *
+     * @return BelongsTo<User, $this>
+     */
+    public function anuladaPor(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'anulada_por');
     }
 
     /**

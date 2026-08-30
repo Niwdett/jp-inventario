@@ -5,10 +5,16 @@
                 {{ $producto->nombre }}
                 <span class="ms-2 font-mono text-sm text-gray-500">{{ $producto->codigo_interno }}</span>
             </h2>
-            <a href="{{ route('admin.productos.edit', $producto) }}"
-               class="inline-flex items-center px-4 py-2 bg-gray-800 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700">
-                {{ __('Editar producto') }}
-            </a>
+            <div class="flex items-center gap-3">
+                <a href="{{ route('admin.productos.historial', $producto) }}"
+                   class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest hover:bg-gray-50">
+                    {{ __('Historial') }}
+                </a>
+                <a href="{{ route('admin.productos.edit', $producto) }}"
+                   class="inline-flex items-center px-4 py-2 bg-gray-800 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700">
+                    {{ __('Editar producto') }}
+                </a>
+            </div>
         </div>
     </x-slot>
 

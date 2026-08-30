@@ -5,11 +5,16 @@ use App\Http\Controllers\AlertaStockController;
 use App\Http\Controllers\CategoriaController;
 use App\Http\Controllers\ClienteController;
 use App\Http\Controllers\CreditoController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DevolucionController;
 use App\Http\Controllers\EntradaInventarioController;
 use App\Http\Controllers\MovimientoInventarioController;
 use App\Http\Controllers\ProductoController;
+use App\Http\Controllers\ProductoHistorialController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ReporteGananciasController;
+use App\Http\Controllers\ReporteInventarioController;
+use App\Http\Controllers\ReporteVentasController;
 use App\Http\Controllers\UsuarioController;
 use App\Http\Controllers\VarianteController;
 use App\Http\Controllers\VentaController;
@@ -19,9 +24,9 @@ Route::get('/', function () {
     return redirect()->route(auth()->check() ? 'dashboard' : 'login');
 });
 
-Route::get('/dashboard', function () {
-    return view('dashboard');
-})->middleware('auth')->name('dashboard');
+Route::get('/dashboard', [DashboardController::class, 'index'])
+    ->middleware('auth')
+    ->name('dashboard');
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -78,13 +83,24 @@ Route::middleware(['auth', 'rol:administrador'])
         Route::patch('productos/{producto}/restaurar', [ProductoController::class, 'restore'])
             ->withTrashed()
             ->name('productos.restore');
+        Route::get('productos/{producto}/historial', [ProductoHistorialController::class, 'index'])
+            ->withTrashed()
+            ->name('productos.historial');
         Route::resource('productos.variantes', VarianteController::class)
             ->only(['store', 'edit', 'update', 'destroy']);
+
+        // Reportes (RF-017, RF-018, RF-019). Solo lectura.
+        Route::prefix('reportes')->name('reportes.')->group(function () {
+            Route::get('ventas', [ReporteVentasController::class, 'index'])->name('ventas');
+            Route::get('inventario', [ReporteInventarioController::class, 'index'])->name('inventario');
+            Route::get('ganancias', [ReporteGananciasController::class, 'index'])->name('ganancias');
+        });
 
         Route::prefix('inventario')->name('inventario.')->group(function () {
             Route::get('entradas', [EntradaInventarioController::class, 'index'])->name('entradas.index');
             Route::get('entradas/registrar', [EntradaInventarioController::class, 'create'])->name('entradas.create');
             Route::post('entradas', [EntradaInventarioController::class, 'store'])->name('entradas.store');
+            Route::patch('entradas/{entrada}/anular', [EntradaInventarioController::class, 'anular'])->name('entradas.anular');
 
             Route::get('ajustes', [AjusteInventarioController::class, 'index'])->name('ajustes.index');
             Route::get('ajustes/registrar', [AjusteInventarioController::class, 'create'])->name('ajustes.create');
