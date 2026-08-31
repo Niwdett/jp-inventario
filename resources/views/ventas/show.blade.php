@@ -185,7 +185,10 @@
                         <p class="mt-0.5 text-sm text-ink-soft">{{ __('Una vez entregada, la venta ya no se podrá anular.') }}</p>
                     </div>
                     <form method="POST" action="{{ route('ventas.entregar', $venta) }}"
-                          onsubmit="return confirm('{{ __('¿Marcar esta venta como entregada? Después ya no se podrá anular.') }}')">
+                          data-confirm="{{ __('Después de entregarla, la venta ya no se podrá anular (solo devolución).') }}"
+                          data-confirm-title="{{ __('Marcar como entregada') }}"
+                          data-confirm-label="{{ __('Marcar entregada') }}"
+                          data-confirm-variant="primary">
                         @csrf @method('PATCH')
                         <x-button>
                             <x-icon name="entrega" class="size-4" />
@@ -201,7 +204,9 @@
                 <h3 class="font-semibold text-ink">{{ __('Anular venta') }}</h3>
                 <p class="mt-1 text-sm text-ink-soft">{{ __('Reintegra el stock automáticamente. Solo posible antes de la entrega.') }}</p>
                 <form method="POST" action="{{ route('ventas.anular', $venta) }}" class="mt-3 space-y-3"
-                      onsubmit="return confirm('{{ __('¿Anular la venta') }} {{ $venta->numero }}?')">
+                      data-confirm="{{ __('Se anulará la venta :numero y se reintegrará el stock. No se puede deshacer.', ['numero' => $venta->numero]) }}"
+                      data-confirm-title="{{ __('Anular venta') }}"
+                      data-confirm-label="{{ __('Anular venta') }}">
                     @csrf @method('PATCH')
                     <div>
                         <x-input-label for="motivo" :value="__('Motivo')" />

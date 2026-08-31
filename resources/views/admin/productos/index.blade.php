@@ -60,7 +60,9 @@
                                     <x-icon-button icon="ver" :label="__('Ver')" :href="route('admin.productos.show', $producto)" />
                                     <x-icon-button icon="editar" :label="__('Editar')" :href="route('admin.productos.edit', $producto)" />
                                     <form method="POST" action="{{ route('admin.productos.destroy', $producto) }}"
-                                          onsubmit="return confirm('¿Eliminar {{ $producto->nombre }}?')">
+                                          data-confirm="{{ __('Se eliminará «:nombre» y sus variantes. Podrás restaurarlo después.', ['nombre' => $producto->nombre]) }}"
+                                          data-confirm-title="{{ __('Eliminar producto') }}"
+                                          data-confirm-label="{{ __('Eliminar') }}">
                                         @csrf @method('DELETE')
                                         <x-icon-button icon="eliminar" :label="__('Eliminar')" variant="danger" />
                                     </form>

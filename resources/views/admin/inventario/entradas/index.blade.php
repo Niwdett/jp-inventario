@@ -58,7 +58,9 @@
                             <td colspan="7" class="border-l-2 border-danger-300 bg-danger-50 px-5 py-4">
                                 <form method="POST" action="{{ route('admin.inventario.entradas.anular', $entrada) }}"
                                       class="flex flex-col gap-3 sm:flex-row sm:items-start"
-                                      onsubmit="return confirm('{{ __('Anular esta entrada y recalcular el costo promedio de la variante. ¿Continuar?') }}')">
+                                      data-confirm="{{ __('Se anulará esta entrada y se recalculará el costo promedio de la variante. No se puede deshacer.') }}"
+                                      data-confirm-title="{{ __('Anular entrada') }}"
+                                      data-confirm-label="{{ __('Anular entrada') }}">
                                     @csrf
                                     @method('PATCH')
                                     <div class="flex-1">

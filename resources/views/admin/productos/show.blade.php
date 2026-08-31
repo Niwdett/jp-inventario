@@ -83,7 +83,9 @@
                                     :href="route('admin.productos.variantes.edit', [$producto, $variante])" />
                                 @if ($producto->variantes->count() > 1)
                                     <form method="POST" action="{{ route('admin.productos.variantes.destroy', [$producto, $variante]) }}"
-                                          onsubmit="return confirm('¿Eliminar la variante {{ $variante->etiqueta() }}?')">
+                                          data-confirm="{{ __('Se eliminará la variante «:etiqueta».', ['etiqueta' => $variante->etiqueta()]) }}"
+                                          data-confirm-title="{{ __('Eliminar variante') }}"
+                                          data-confirm-label="{{ __('Eliminar') }}">
                                         @csrf @method('DELETE')
                                         <x-icon-button icon="eliminar" :label="__('Eliminar variante')" variant="danger" />
                                     </form>

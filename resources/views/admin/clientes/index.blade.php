@@ -65,7 +65,9 @@
                                     @endcan
                                     @can('delete', $cliente)
                                         <form method="POST" action="{{ route('admin.clientes.destroy', $cliente) }}"
-                                              onsubmit="return confirm('¿Eliminar al cliente {{ $cliente->nombre }}?')">
+                                              data-confirm="{{ __('Se eliminará al cliente «:nombre». Podrás restaurarlo después.', ['nombre' => $cliente->nombre]) }}"
+                                              data-confirm-title="{{ __('Eliminar cliente') }}"
+                                              data-confirm-label="{{ __('Eliminar') }}">
                                             @csrf @method('DELETE')
                                             <x-icon-button icon="eliminar" :label="__('Eliminar')" variant="danger" />
                                         </form>

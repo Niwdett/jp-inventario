@@ -46,7 +46,9 @@
                                 @else
                                     <x-icon-button icon="editar" :label="__('Editar')" :href="route('admin.categorias.edit', $categoria)" />
                                     <form method="POST" action="{{ route('admin.categorias.destroy', $categoria) }}"
-                                          onsubmit="return confirm('¿Eliminar la categoría {{ $categoria->nombre }}?')">
+                                          data-confirm="{{ __('Se eliminará la categoría «:nombre». Podrás restaurarla después.', ['nombre' => $categoria->nombre]) }}"
+                                          data-confirm-title="{{ __('Eliminar categoría') }}"
+                                          data-confirm-label="{{ __('Eliminar') }}">
                                         @csrf @method('DELETE')
                                         <x-icon-button icon="eliminar" :label="__('Eliminar')" variant="danger" />
                                     </form>

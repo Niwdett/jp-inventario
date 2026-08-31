@@ -52,7 +52,9 @@
                                     <x-icon-button icon="editar" :label="__('Editar')" :href="route('admin.usuarios.edit', $usuario)" />
                                     @unless ($usuario->is(auth()->user()))
                                         <form method="POST" action="{{ route('admin.usuarios.destroy', $usuario) }}"
-                                              onsubmit="return confirm('¿Desactivar a {{ $usuario->name }}?')">
+                                              data-confirm="{{ __('«:nombre» dejará de poder iniciar sesión. Podrás reactivarlo después.', ['nombre' => $usuario->name]) }}"
+                                              data-confirm-title="{{ __('Desactivar usuario') }}"
+                                              data-confirm-label="{{ __('Desactivar') }}">
                                             @csrf @method('DELETE')
                                             <x-icon-button icon="eliminar" :label="__('Desactivar')" variant="danger" />
                                         </form>
