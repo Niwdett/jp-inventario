@@ -3,9 +3,11 @@
         @include('admin.inventario._nav')
 
         @if ($variantes->isEmpty())
-            <x-alert variant="success">
-                {{ __('Ninguna variante está en stock bajo. Todo el inventario está por encima de su umbral.') }}
-            </x-alert>
+            <x-card>
+                <x-empty-state icon="check" tone="positive" :title="__('Todo el inventario está por encima de su umbral')">
+                    {{ __('Ninguna variante necesita reposición ahora mismo.') }}
+                </x-empty-state>
+            </x-card>
         @else
             <x-alert variant="warning">
                 {{ trans_choice('{1} :count variante necesita reposición.|[2,*] :count variantes necesitan reposición.', $variantes->count(), ['count' => $variantes->count()]) }}

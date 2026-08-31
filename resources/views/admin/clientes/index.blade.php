@@ -7,15 +7,8 @@
             </x-button>
         </x-slot>
 
-        @if (session('status'))
-            <x-alert variant="success">{{ session('status') }}</x-alert>
-        @endif
-        @if (session('error'))
-            <x-alert variant="danger">{{ session('error') }}</x-alert>
-        @endif
-
         <x-card flush>
-            <x-table>
+            <x-table stack>
                 <x-slot name="head">
                     <th class="px-5 py-3 font-medium">{{ __('Nombre') }}</th>
                     <th class="px-5 py-3 font-medium">{{ __('Teléfono') }}</th>
@@ -35,13 +28,13 @@
                                 <a href="{{ route('admin.clientes.show', $cliente) }}" class="font-medium text-primary-700 hover:text-primary-800">{{ $cliente->nombre }}</a>
                             @endif
                         </td>
-                        <td class="px-5 py-3 text-ink-soft">{{ $cliente->telefono ?? '—' }}</td>
-                        <td class="px-5 py-3 font-mono text-xs text-ink-soft">{{ $cliente->cedula ?? '—' }}</td>
-                        <td class="px-5 py-3 text-right tabular-nums {{ (float) $cliente->saldo_favor > 0 ? 'text-success-700' : 'text-ink-soft' }}">
-                            {{ number_format((float) $cliente->saldo_favor, 2) }}
+                        <td class="px-5 py-3 text-ink-soft" data-label="{{ __('Teléfono') }}">{{ $cliente->telefono ?? '—' }}</td>
+                        <td class="px-5 py-3 font-mono text-xs text-ink-soft" data-label="{{ __('Cédula') }}">{{ $cliente->cedula ?? '—' }}</td>
+                        <td class="px-5 py-3 text-right tabular-nums {{ (float) $cliente->saldo_favor > 0 ? 'text-success-700' : 'text-ink-soft' }}" data-label="{{ __('Saldo a favor') }}">
+                            <x-money :value="$cliente->saldo_favor" />
                         </td>
-                        <td class="px-5 py-3 text-right tabular-nums text-ink-soft">{{ $cliente->ventas_a_credito_count }}</td>
-                        <td class="px-5 py-3">
+                        <td class="px-5 py-3 text-right tabular-nums text-ink-soft" data-label="{{ __('Créditos abiertos') }}">{{ $cliente->ventas_a_credito_count }}</td>
+                        <td class="px-5 py-3" data-label="{{ __('Estado') }}">
                             @if ($cliente->trashed())
                                 <x-badge>{{ __('Eliminado') }}</x-badge>
                             @else
@@ -49,7 +42,7 @@
                             @endif
                         </td>
                         <td class="px-5 py-3">
-                            <div class="flex items-center justify-end gap-1">
+                            <div class="flex items-center justify-end gap-1 max-sm:justify-start">
                                 @if ($cliente->trashed())
                                     @can('restore', $cliente)
                                         <form method="POST" action="{{ route('admin.clientes.restore', $cliente) }}">
@@ -65,7 +58,9 @@
                                     @endcan
                                     @can('delete', $cliente)
                                         <form method="POST" action="{{ route('admin.clientes.destroy', $cliente) }}"
-                                              onsubmit="return confirm('¿Eliminar al cliente {{ $cliente->nombre }}?')">
+                                              data-confirm="{{ __('Se eliminará al cliente «:nombre». Podrás restaurarlo después.', ['nombre' => $cliente->nombre]) }}"
+                                              data-confirm-title="{{ __('Eliminar cliente') }}"
+                                              data-confirm-label="{{ __('Eliminar') }}">
                                             @csrf @method('DELETE')
                                             <x-icon-button icon="eliminar" :label="__('Eliminar')" variant="danger" />
                                         </form>
@@ -75,11 +70,15 @@
                         </td>
                     </tr>
                 @empty
-                    <tr>
-                        <td colspan="7" class="px-5 py-12 text-center text-sm text-ink-faint">
-                            {{ __('Aún no hay clientes. Crea el primero para poder venderle a crédito o registrar su saldo a favor.') }}
-                        </td>
-                    </tr>
+                    <x-table-empty :colspan="7" icon="clientes" :title="__('Aún no hay clientes')">
+                        {{ __('Crea el primero para poder venderle a crédito o registrar su saldo a favor.') }}
+                        <x-slot:actions>
+                            <x-button size="sm" :href="route('admin.clientes.create')">
+                                <x-icon name="mas" class="size-4" />
+                                {{ __('Nuevo cliente') }}
+                            </x-button>
+                        </x-slot:actions>
+                    </x-table-empty>
                 @endforelse
             </x-table>
         </x-card>

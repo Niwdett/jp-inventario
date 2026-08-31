@@ -46,7 +46,17 @@
                         <td class="px-5 py-3 text-ink-soft">{{ $movimiento->usuario?->name ?? '—' }}</td>
                     </tr>
                 @empty
-                    <tr><td colspan="6" class="px-5 py-12 text-center text-sm text-ink-faint">{{ __('Sin movimientos.') }}</td></tr>
+                    @if ($varianteSeleccionada)
+                        <x-table-empty :colspan="6" icon="buscar" :title="__('Esta variante no tiene movimientos')">
+                            <x-slot:actions>
+                                <x-button variant="secondary" size="sm" :href="route('admin.inventario.movimientos.index')">{{ __('Ver todos') }}</x-button>
+                            </x-slot:actions>
+                        </x-table-empty>
+                    @else
+                        <x-table-empty :colspan="6" icon="movimientos" :title="__('Sin movimientos de inventario')">
+                            {{ __('Las entradas, ajustes y ventas quedarán registrados aquí automáticamente.') }}
+                        </x-table-empty>
+                    @endif
                 @endforelse
             </x-table>
         </x-card>

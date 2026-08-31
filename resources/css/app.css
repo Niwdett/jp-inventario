@@ -131,3 +131,78 @@
 [x-cloak] {
     display: none !important;
 }
+
+/*
+ * Impresión (tarea 6): comprobante de venta y reportes en papel.
+ * El shell (sidebar/topbar) y los controles llevan `print:hidden` en el markup;
+ * aquí solo el aseo general de la página impresa.
+ */
+@media print {
+    body {
+        background: #fff;
+    }
+
+    main :where(.rounded-xl, .rounded-2xl, table, tr) {
+        break-inside: avoid;
+    }
+
+    @page {
+        margin: 1.5cm;
+    }
+}
+
+/*
+ * Tabla → tarjetas apiladas en móvil (tarea 5 del pulido visual).
+ * Se activa con <x-table stack>. Cada fila queda como una sección de la tarjeta
+ * y cada celda muestra su etiqueta (data-label) a la izquierda y el valor a la
+ * derecha. Las celdas sin data-label (nombre principal, acciones) van a sangre.
+ */
+@media (max-width: 639px) {
+    .table-stack,
+    .table-stack thead,
+    .table-stack tbody,
+    .table-stack tr,
+    .table-stack td {
+        display: block;
+        width: 100%;
+    }
+
+    .table-stack thead {
+        display: none;
+    }
+
+    .table-stack tr {
+        padding: 0.75rem 1.25rem;
+    }
+
+    .table-stack td {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: 0.25rem 0;
+        text-align: right;
+        white-space: normal;
+    }
+
+    .table-stack td::before {
+        content: attr(data-label);
+        flex: 0 0 auto;
+        text-align: left;
+        font-size: 0.75rem;
+        font-weight: 500;
+        color: var(--color-ink-faint);
+    }
+
+    .table-stack td:not([data-label]),
+    .table-stack td[data-label=''] {
+        justify-content: flex-start;
+        padding-top: 0.125rem;
+        padding-bottom: 0.125rem;
+    }
+
+    .table-stack td:not([data-label])::before,
+    .table-stack td[data-label='']::before {
+        content: none;
+    }
+}

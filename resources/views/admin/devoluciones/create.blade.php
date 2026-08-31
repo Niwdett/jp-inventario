@@ -12,9 +12,6 @@
         </x-slot>
 
         <x-card class="max-w-3xl">
-            @if (session('error'))
-                <x-alert variant="danger" class="mb-5">{{ session('error') }}</x-alert>
-            @endif
             <x-input-error :messages="$errors->get('lineas')" class="mb-5" />
 
             <p class="mb-5 text-sm text-ink-soft">
@@ -39,7 +36,7 @@
                                     <span class="mt-0.5 block text-xs text-ink-faint">
                                         {{ __('Vendidas:') }} {{ $linea->cantidad }} ·
                                         {{ __('ya devueltas:') }} {{ $devuelta }} ·
-                                        {{ __('pagó/unidad:') }} {{ number_format((float) $linea->valorUnitarioPagado(), 2) }}
+                                        {{ __('pagó/unidad:') }} <x-money :value="$linea->valorUnitarioPagado()" />
                                     </span>
                                 </span>
                             </label>

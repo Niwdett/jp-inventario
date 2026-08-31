@@ -26,5 +26,35 @@
 @if ($href)
     <a href="{{ $href }}" {{ $attributes->merge(['class' => $classes]) }}>{{ $slot }}</a>
 @else
-    <button {{ $attributes->merge(['type' => 'submit', 'class' => $classes]) }}>{{ $slot }}</button>
+    {{--
+        Botón de envío: al enviar el formulario (válido y sin cancelar) se
+        deshabilita y muestra un spinner, evitando el doble submit. Se desactiva
+        con el atributo `no-loading`.
+    --}}
+    <button
+        {{ $attributes->merge(['type' => 'submit', 'class' => $classes]) }}
+        @unless ($attributes->has('no-loading'))
+            x-data="{ loading: false }"
+            x-init="
+                const form = $el.closest('form');
+                if (form) {
+                    form.addEventListener('submit', (e) => {
+                        if (! e.defaultPrevented) { loading = true; }
+                    });
+                }
+            "
+            x-bind:disabled="loading"
+            x-bind:aria-busy="loading"
+        @endunless
+    >
+        @unless ($attributes->has('no-loading'))
+            <svg x-show="loading" x-cloak class="size-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+                <path class="opacity-90" fill="currentColor" d="M4 12a8 8 0 0 1 8-8V0C5.373 0 0 5.373 0 12h4z" />
+            </svg>
+            <span x-show="! loading" class="contents">{{ $slot }}</span>
+        @else
+            {{ $slot }}
+        @endunless
+    </button>
 @endif

@@ -16,13 +16,6 @@
             </x-button>
         </x-slot>
 
-        @if (session('status'))
-            <x-alert variant="success">{{ session('status') }}</x-alert>
-        @endif
-        @if (session('error'))
-            <x-alert variant="danger">{{ session('error') }}</x-alert>
-        @endif
-
         <div class="flex flex-wrap gap-1 rounded-lg border border-line bg-surface p-1 text-sm shadow-xs sm:w-fit">
             @foreach ($filtros as $valor => $etiqueta)
                 <a href="{{ route('ventas.index', $valor ? ['estado' => $valor] : []) }}"
@@ -35,7 +28,7 @@
         </div>
 
         <x-card flush>
-            <x-table>
+            <x-table stack>
                 <x-slot name="head">
                     <th class="px-5 py-3 font-medium">{{ __('Número') }}</th>
                     <th class="px-5 py-3 font-medium">{{ __('Fecha') }}</th>
@@ -52,12 +45,12 @@
                             <a href="{{ route('ventas.show', $venta) }}"
                                class="font-mono text-sm font-medium text-primary-700 hover:text-primary-800">{{ $venta->numero }}</a>
                         </td>
-                        <td class="whitespace-nowrap px-5 py-3 text-ink-soft">{{ $venta->fecha_venta->format('Y-m-d H:i') }}</td>
-                        <td class="px-5 py-3 text-ink">{{ $venta->cliente?->nombre ?? '—' }}</td>
-                        <td class="px-5 py-3 text-ink-soft">{{ $venta->usuario->name }}</td>
-                        <td class="px-5 py-3 text-ink-soft">{{ $venta->metodo_pago->label() }}</td>
-                        <td class="px-5 py-3 text-right tabular-nums text-ink">{{ number_format((float) $venta->total, 2) }}</td>
-                        <td class="px-5 py-3">
+                        <td class="whitespace-nowrap px-5 py-3 text-ink-soft" data-label="{{ __('Fecha') }}">{{ $venta->fecha_venta->format('Y-m-d H:i') }}</td>
+                        <td class="px-5 py-3 text-ink" data-label="{{ __('Cliente') }}">{{ $venta->cliente?->nombre ?? '—' }}</td>
+                        <td class="px-5 py-3 text-ink-soft" data-label="{{ __('Vendedor') }}">{{ $venta->usuario->name }}</td>
+                        <td class="px-5 py-3 text-ink-soft" data-label="{{ __('Método') }}">{{ $venta->metodo_pago->label() }}</td>
+                        <td class="px-5 py-3 text-right tabular-nums text-ink" data-label="{{ __('Total') }}"><x-money :value="$venta->total" /></td>
+                        <td class="px-5 py-3" data-label="{{ __('Estado') }}">
                             @if ($venta->estado === \App\Enums\EstadoVenta::Anulada)
                                 <x-badge variant="danger">{{ __('Anulada') }}</x-badge>
                             @elseif ($venta->entregada_at)
@@ -68,7 +61,24 @@
                         </td>
                     </tr>
                 @empty
-                    <tr><td colspan="7" class="px-5 py-12 text-center text-sm text-ink-faint">{{ __('Aún no hay ventas registradas.') }}</td></tr>
+                    @if ($estadoActual)
+                        <x-table-empty :colspan="7" icon="buscar"
+                                       :title="__('No hay ventas :estado', ['estado' => \Illuminate\Support\Str::lower($filtros[$estadoActual] ?? '')])">
+                            <x-slot:actions>
+                                <x-button variant="secondary" size="sm" :href="route('ventas.index')">{{ __('Ver todas') }}</x-button>
+                            </x-slot:actions>
+                        </x-table-empty>
+                    @else
+                        <x-table-empty :colspan="7" icon="ventas" :title="__('Aún no hay ventas registradas')">
+                            {{ __('Registra la primera venta para llevar el control de tu inventario y tus ingresos.') }}
+                            <x-slot:actions>
+                                <x-button size="sm" :href="route('ventas.create')">
+                                    <x-icon name="mas" class="size-4" />
+                                    {{ __('Registrar venta') }}
+                                </x-button>
+                            </x-slot:actions>
+                        </x-table-empty>
+                    @endif
                 @endforelse
             </x-table>
         </x-card>

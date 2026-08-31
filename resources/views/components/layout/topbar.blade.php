@@ -7,7 +7,7 @@
         ->join('');
 @endphp
 
-<header class="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-line bg-surface/95 px-4 backdrop-blur-sm sm:px-6 lg:px-8">
+<header class="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-line bg-surface/95 px-4 backdrop-blur-sm sm:px-6 lg:px-8 print:hidden">
     <button type="button" @click="sidebarOpen = true"
             class="-ml-1.5 rounded-lg p-1.5 text-ink-soft transition-colors hover:bg-surface-sunken hover:text-ink lg:hidden">
         <x-icon name="menu" class="size-5" />

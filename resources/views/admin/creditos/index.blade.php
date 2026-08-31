@@ -1,13 +1,6 @@
 <x-app-layout>
     <x-page :title="__('Créditos por cobrar')">
 
-        @if (session('status'))
-            <x-alert variant="success">{{ session('status') }}</x-alert>
-        @endif
-        @if (session('error'))
-            <x-alert variant="danger">{{ session('error') }}</x-alert>
-        @endif
-
         <x-card flush>
             <x-table>
                 <x-slot name="head">
@@ -32,8 +25,8 @@
                             @endif
                         </td>
                         <td class="whitespace-nowrap px-5 py-3 text-ink-soft">{{ $venta->fecha_venta->format('Y-m-d') }}</td>
-                        <td class="px-5 py-3 text-right tabular-nums text-ink-soft">{{ number_format((float) $venta->credito_monto, 2) }}</td>
-                        <td class="px-5 py-3 text-right font-semibold tabular-nums text-ink">{{ number_format((float) $venta->credito_saldo_pendiente, 2) }}</td>
+                        <td class="px-5 py-3 text-right tabular-nums text-ink-soft"><x-money :value="$venta->credito_monto" /></td>
+                        <td class="px-5 py-3 text-right font-semibold tabular-nums text-ink"><x-money :value="$venta->credito_saldo_pendiente" /></td>
                         <td class="px-5 py-3">
                             @if ($venta->fecha_venta->diffInDays(now()) > \App\Models\Cliente::DIAS_MORA)
                                 <x-badge variant="danger">{{ __('En mora') }}</x-badge>
@@ -43,9 +36,9 @@
                         </td>
                     </tr>
                 @empty
-                    <tr>
-                        <td colspan="6" class="px-5 py-12 text-center text-sm text-ink-faint">{{ __('No hay créditos pendientes de cobro.') }}</td>
-                    </tr>
+                    <x-table-empty :colspan="6" icon="check" tone="positive" :title="__('No hay créditos pendientes de cobro')">
+                        {{ __('Todas las ventas a crédito están saldadas.') }}
+                    </x-table-empty>
                 @endforelse
             </x-table>
         </x-card>

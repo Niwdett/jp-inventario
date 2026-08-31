@@ -1,6 +1,10 @@
 @php($comparable = $comparable ?? false)
 
-<x-card>
+<p class="hidden text-sm text-ink-soft print:block">
+    {{ __('Periodo:') }} <span class="font-medium text-ink">{{ $periodo['etiqueta'] }}</span>
+</p>
+
+<x-card class="print:hidden">
     <form method="GET" action="{{ route($ruta) }}" class="flex flex-wrap items-end gap-4">
         <div>
             <x-input-label :value="__('Periodo')" />

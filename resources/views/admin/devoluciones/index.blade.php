@@ -1,10 +1,6 @@
 <x-app-layout>
     <x-page :title="__('Devoluciones')">
 
-        @if (session('status'))
-            <x-alert variant="success">{{ session('status') }}</x-alert>
-        @endif
-
         <x-card flush>
             <x-table>
                 <x-slot name="head">
@@ -30,13 +26,13 @@
                                 <x-badge>{{ __('Rechazada') }}</x-badge>
                             @endif
                         </td>
-                        <td class="px-5 py-3 text-right tabular-nums text-ink">{{ number_format((float) $devolucion->saldo_generado, 2) }}</td>
+                        <td class="px-5 py-3 text-right tabular-nums text-ink"><x-money :value="$devolucion->saldo_generado" /></td>
                         <td class="px-5 py-3 text-ink-soft">{{ $devolucion->usuario?->name }}</td>
                     </tr>
                 @empty
-                    <tr>
-                        <td colspan="6" class="px-5 py-12 text-center text-sm text-ink-faint">{{ __('Aún no se han registrado devoluciones.') }}</td>
-                    </tr>
+                    <x-table-empty :colspan="6" icon="devoluciones" :title="__('Aún no se han registrado devoluciones')">
+                        {{ __('Las devoluciones se inician desde el detalle de una venta entregada.') }}
+                    </x-table-empty>
                 @endforelse
             </x-table>
         </x-card>

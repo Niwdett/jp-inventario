@@ -33,11 +33,11 @@
         <div x-data="{ sidebarOpen: false }" class="min-h-screen bg-canvas">
             {{-- Fondo oscuro para la sidebar en móvil --}}
             <div x-show="sidebarOpen" x-transition.opacity @click="sidebarOpen = false" x-cloak
-                 class="fixed inset-0 z-40 bg-ink/40 lg:hidden"></div>
+                 class="fixed inset-0 z-40 bg-ink/40 lg:hidden print:hidden"></div>
 
             <x-layout.sidebar />
 
-            <div class="lg:pl-64">
+            <div class="lg:pl-64 print:pl-0">
                 <x-layout.topbar />
 
                 @isset($header)
@@ -53,5 +53,8 @@
                 </main>
             </div>
         </div>
+
+        <x-confirm-modal />
+        <x-toaster />
     </body>
 </html>

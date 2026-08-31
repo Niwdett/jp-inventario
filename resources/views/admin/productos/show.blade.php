@@ -17,13 +17,6 @@
             </x-button>
         </x-slot>
 
-        @if (session('status'))
-            <x-alert variant="success">{{ session('status') }}</x-alert>
-        @endif
-        @if (session('error'))
-            <x-alert variant="danger">{{ session('error') }}</x-alert>
-        @endif
-
         <x-card>
             <div class="flex flex-col gap-6 sm:flex-row">
                 @if ($producto->foto)
@@ -38,7 +31,7 @@
                         <dt class="text-ink-faint">{{ __('Marca') }}</dt><dd class="mt-0.5 text-ink">{{ $producto->marca ?: '—' }}</dd>
                     </div>
                     <div class="flex justify-between gap-4 sm:block">
-                        <dt class="text-ink-faint">{{ __('Precio de referencia') }}</dt><dd class="mt-0.5 tabular-nums text-ink">{{ number_format((float) $producto->precio_referencia, 2) }}</dd>
+                        <dt class="text-ink-faint">{{ __('Precio de referencia') }}</dt><dd class="mt-0.5 tabular-nums text-ink"><x-money :value="$producto->precio_referencia" /></dd>
                     </div>
                     <div class="flex justify-between gap-4 sm:block">
                         <dt class="text-ink-faint">{{ __('Umbral de stock bajo') }}</dt><dd class="mt-0.5 tabular-nums text-ink">{{ $producto->umbral_stock_bajo }}</dd>
@@ -72,7 +65,7 @@
                                 <x-badge variant="warning" class="ml-1">{{ __('Stock bajo') }}</x-badge>
                             @endif
                         </td>
-                        <td class="px-5 py-3 text-right tabular-nums text-ink-soft">{{ number_format((float) $variante->costo_promedio, 4) }}</td>
+                        <td class="px-5 py-3 text-right tabular-nums text-ink-soft"><x-money :value="$variante->costo_promedio" :decimals="4" /></td>
                         <td class="px-5 py-3">
                             <div class="flex items-center justify-end gap-1">
                                 <x-icon-button icon="entrada" :label="__('Registrar entrada')"
@@ -83,7 +76,9 @@
                                     :href="route('admin.productos.variantes.edit', [$producto, $variante])" />
                                 @if ($producto->variantes->count() > 1)
                                     <form method="POST" action="{{ route('admin.productos.variantes.destroy', [$producto, $variante]) }}"
-                                          onsubmit="return confirm('¿Eliminar la variante {{ $variante->etiqueta() }}?')">
+                                          data-confirm="{{ __('Se eliminará la variante «:etiqueta».', ['etiqueta' => $variante->etiqueta()]) }}"
+                                          data-confirm-title="{{ __('Eliminar variante') }}"
+                                          data-confirm-label="{{ __('Eliminar') }}">
                                         @csrf @method('DELETE')
                                         <x-icon-button icon="eliminar" :label="__('Eliminar variante')" variant="danger" />
                                     </form>

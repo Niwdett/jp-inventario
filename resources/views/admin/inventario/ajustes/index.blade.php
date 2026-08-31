@@ -9,10 +9,6 @@
 
         @include('admin.inventario._nav')
 
-        @if (session('status'))
-            <x-alert variant="success">{{ session('status') }}</x-alert>
-        @endif
-
         <x-card flush>
             <x-table>
                 <x-slot name="head">
@@ -35,7 +31,15 @@
                         <td class="px-5 py-3 text-ink-soft">{{ $ajuste->motivo ?: '—' }}</td>
                     </tr>
                 @empty
-                    <tr><td colspan="5" class="px-5 py-12 text-center text-sm text-ink-faint">{{ __('Aún no hay ajustes registrados.') }}</td></tr>
+                    <x-table-empty :colspan="5" icon="ajuste" :title="__('Aún no hay ajustes registrados')">
+                        {{ __('Usa un ajuste cuando el conteo físico no coincida con el stock del sistema.') }}
+                        <x-slot:actions>
+                            <x-button size="sm" :href="route('admin.inventario.ajustes.create')">
+                                <x-icon name="ajuste" class="size-4" />
+                                {{ __('Ajustar inventario') }}
+                            </x-button>
+                        </x-slot:actions>
+                    </x-table-empty>
                 @endforelse
             </x-table>
         </x-card>

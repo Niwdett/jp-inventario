@@ -15,18 +15,17 @@
             </div>
         </x-slot>
         <x-slot name="actions">
-            <x-button variant="secondary" :href="route('ventas.index')">
+            <x-button variant="secondary" :href="route('ventas.index')" class="print:hidden">
                 <x-icon name="arrow-left" class="size-4" />
                 {{ __('Volver') }}
             </x-button>
+            <x-print-button />
         </x-slot>
 
-        @if (session('status'))
-            <x-alert variant="success">{{ session('status') }}</x-alert>
-        @endif
-        @if (session('error'))
-            <x-alert variant="danger">{{ session('error') }}</x-alert>
-        @endif
+        <div class="hidden print:block">
+            <p class="font-display text-xl font-bold text-ink">{{ config('app.name', 'JP') }} · {{ __('Ropa & Calzado') }}</p>
+            <p class="text-sm text-ink-soft">{{ __('Comprobante de venta') }} · {{ $venta->numero }} · {{ $venta->fecha_venta->format('Y-m-d H:i') }}</p>
+        </div>
 
         <x-card>
             <dl class="grid grid-cols-1 gap-x-8 gap-y-3 text-sm sm:grid-cols-2 lg:grid-cols-3">
@@ -52,7 +51,7 @@
                 @if ((float) $venta->saldo_favor_aplicado > 0)
                     <div class="flex justify-between gap-4 sm:block">
                         <dt class="text-ink-faint">{{ __('Saldo a favor aplicado') }}</dt>
-                        <dd class="mt-0.5 tabular-nums text-ink">{{ number_format((float) $venta->saldo_favor_aplicado, 2) }}</dd>
+                        <dd class="mt-0.5 tabular-nums text-ink"><x-money :value="$venta->saldo_favor_aplicado" /></dd>
                     </div>
                 @endif
                 <div class="flex justify-between gap-4 sm:block">
@@ -88,24 +87,24 @@
                             <span class="text-ink-faint">— {{ $linea->variante->etiqueta() }}</span>
                         </td>
                         <td class="px-5 py-3 text-right tabular-nums">{{ $linea->cantidad }}</td>
-                        <td class="px-5 py-3 text-right tabular-nums text-ink-soft">{{ number_format((float) $linea->precio_unitario, 2) }}</td>
+                        <td class="px-5 py-3 text-right tabular-nums text-ink-soft"><x-money :value="$linea->precio_unitario" /></td>
                         <td class="px-5 py-3 text-right tabular-nums text-ink-soft">{{ $linea->descuento_porcentaje ? number_format((float) $linea->descuento_porcentaje, 2) : '—' }}</td>
-                        <td class="px-5 py-3 text-right tabular-nums text-ink">{{ number_format((float) $linea->importe_linea, 2) }}</td>
+                        <td class="px-5 py-3 text-right tabular-nums text-ink"><x-money :value="$linea->importe_linea" /></td>
                     </tr>
                 @endforeach
 
                 <x-slot name="foot">
                     <tr>
                         <td class="px-5 py-2 text-right text-ink-soft" colspan="4">{{ __('Subtotal') }}</td>
-                        <td class="px-5 py-2 text-right tabular-nums">{{ number_format((float) $venta->subtotal, 2) }}</td>
+                        <td class="px-5 py-2 text-right tabular-nums"><x-money :value="$venta->subtotal" /></td>
                     </tr>
                     <tr>
                         <td class="px-5 py-2 text-right text-ink-soft" colspan="4">{{ __('Descuento') }}</td>
-                        <td class="px-5 py-2 text-right tabular-nums">{{ number_format((float) $venta->descuento_total, 2) }}</td>
+                        <td class="px-5 py-2 text-right tabular-nums"><x-money :value="$venta->descuento_total" /></td>
                     </tr>
                     <tr class="font-semibold text-ink">
                         <td class="px-5 py-2.5 text-right" colspan="4">{{ __('Total') }}</td>
-                        <td class="px-5 py-2.5 text-right tabular-nums">{{ number_format((float) $venta->total, 2) }}</td>
+                        <td class="px-5 py-2.5 text-right tabular-nums"><x-money :value="$venta->total" /></td>
                     </tr>
                 </x-slot>
             </x-table>
@@ -116,12 +115,12 @@
                 <dl class="grid grid-cols-1 gap-x-8 gap-y-3 text-sm sm:grid-cols-2 lg:grid-cols-3">
                     <div class="flex justify-between gap-4 sm:block">
                         <dt class="text-ink-faint">{{ __('Deuda inicial') }}</dt>
-                        <dd class="mt-0.5 tabular-nums text-ink">{{ number_format((float) $venta->credito_monto, 2) }}</dd>
+                        <dd class="mt-0.5 tabular-nums text-ink"><x-money :value="$venta->credito_monto" /></dd>
                     </div>
                     <div class="flex justify-between gap-4 sm:block">
                         <dt class="text-ink-faint">{{ __('Saldo pendiente') }}</dt>
                         <dd class="mt-0.5 font-semibold tabular-nums {{ (float) $venta->credito_saldo_pendiente > 0 ? 'text-warning-700' : 'text-success-700' }}">
-                            {{ number_format((float) $venta->credito_saldo_pendiente, 2) }}
+                            <x-money :value="$venta->credito_saldo_pendiente" />
                             @if ((float) $venta->credito_saldo_pendiente <= 0) · {{ __('saldada') }} @endif
                         </dd>
                     </div>
@@ -148,7 +147,7 @@
                                     <tr>
                                         <td class="py-2 pr-4 text-ink-soft">{{ $abono->fecha->format('Y-m-d') }}</td>
                                         <td class="py-2 pr-4 text-ink-soft">{{ $abono->usuario?->name }}</td>
-                                        <td class="py-2 text-right tabular-nums text-ink">{{ number_format((float) $abono->monto, 2) }}</td>
+                                        <td class="py-2 text-right tabular-nums text-ink"><x-money :value="$abono->monto" /></td>
                                     </tr>
                                 @endforeach
                             </tbody>
@@ -157,7 +156,7 @@
                 @endif
 
                 @can('abonar', $venta)
-                    <form method="POST" action="{{ route('admin.creditos.abonos.store', $venta) }}" class="mt-4 flex flex-wrap items-end gap-3 border-t border-line pt-4">
+                    <form method="POST" action="{{ route('admin.creditos.abonos.store', $venta) }}" class="mt-4 flex flex-wrap items-end gap-3 border-t border-line pt-4 print:hidden">
                         @csrf
                         <div>
                             <x-input-label for="monto" :value="__('Monto del abono')" />
@@ -178,14 +177,17 @@
         @endif
 
         @can('entregar', $venta)
-            <x-card>
+            <x-card class="print:hidden">
                 <div class="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <p class="font-medium text-ink">{{ __('Entrega') }}</p>
                         <p class="mt-0.5 text-sm text-ink-soft">{{ __('Una vez entregada, la venta ya no se podrá anular.') }}</p>
                     </div>
                     <form method="POST" action="{{ route('ventas.entregar', $venta) }}"
-                          onsubmit="return confirm('{{ __('¿Marcar esta venta como entregada? Después ya no se podrá anular.') }}')">
+                          data-confirm="{{ __('Después de entregarla, la venta ya no se podrá anular (solo devolución).') }}"
+                          data-confirm-title="{{ __('Marcar como entregada') }}"
+                          data-confirm-label="{{ __('Marcar entregada') }}"
+                          data-confirm-variant="primary">
                         @csrf @method('PATCH')
                         <x-button>
                             <x-icon name="entrega" class="size-4" />
@@ -197,11 +199,13 @@
         @endcan
 
         @can('anular', $venta)
-            <x-card class="border-danger-200">
+            <x-card class="border-danger-200 print:hidden">
                 <h3 class="font-semibold text-ink">{{ __('Anular venta') }}</h3>
                 <p class="mt-1 text-sm text-ink-soft">{{ __('Reintegra el stock automáticamente. Solo posible antes de la entrega.') }}</p>
                 <form method="POST" action="{{ route('ventas.anular', $venta) }}" class="mt-3 space-y-3"
-                      onsubmit="return confirm('{{ __('¿Anular la venta') }} {{ $venta->numero }}?')">
+                      data-confirm="{{ __('Se anulará la venta :numero y se reintegrará el stock. No se puede deshacer.', ['numero' => $venta->numero]) }}"
+                      data-confirm-title="{{ __('Anular venta') }}"
+                      data-confirm-label="{{ __('Anular venta') }}">
                     @csrf @method('PATCH')
                     <div>
                         <x-input-label for="motivo" :value="__('Motivo')" />
@@ -215,7 +219,7 @@
         @endcan
 
         @if (auth()->user()->esAdministrador() && $venta->entregada_at && $venta->estado === \App\Enums\EstadoVenta::Confirmada)
-            <x-card>
+            <x-card class="print:hidden">
                 <div class="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <h3 class="font-semibold text-ink">{{ __('Devoluciones') }}</h3>
@@ -234,7 +238,7 @@
                                 {{ $devolucion->fecha->format('Y-m-d') }} ·
                                 {{ $devolucion->estado->label() }} ·
                                 {{ __('unidades:') }} {{ $devolucion->lineas->sum('cantidad') }} ·
-                                {{ __('saldo generado:') }} {{ number_format((float) $devolucion->saldo_generado, 2) }}
+                                {{ __('saldo generado:') }} <x-money :value="$devolucion->saldo_generado" />
                             </li>
                         @endforeach
                     </ul>

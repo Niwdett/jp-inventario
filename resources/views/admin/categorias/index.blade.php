@@ -7,13 +7,6 @@
             </x-button>
         </x-slot>
 
-        @if (session('status'))
-            <x-alert variant="success">{{ session('status') }}</x-alert>
-        @endif
-        @if (session('error'))
-            <x-alert variant="danger">{{ session('error') }}</x-alert>
-        @endif
-
         <x-card flush>
             <x-table>
                 <x-slot name="head">
@@ -46,7 +39,9 @@
                                 @else
                                     <x-icon-button icon="editar" :label="__('Editar')" :href="route('admin.categorias.edit', $categoria)" />
                                     <form method="POST" action="{{ route('admin.categorias.destroy', $categoria) }}"
-                                          onsubmit="return confirm('¿Eliminar la categoría {{ $categoria->nombre }}?')">
+                                          data-confirm="{{ __('Se eliminará la categoría «:nombre». Podrás restaurarla después.', ['nombre' => $categoria->nombre]) }}"
+                                          data-confirm-title="{{ __('Eliminar categoría') }}"
+                                          data-confirm-label="{{ __('Eliminar') }}">
                                         @csrf @method('DELETE')
                                         <x-icon-button icon="eliminar" :label="__('Eliminar')" variant="danger" />
                                     </form>
@@ -55,11 +50,15 @@
                         </td>
                     </tr>
                 @empty
-                    <tr>
-                        <td colspan="5" class="px-5 py-12 text-center text-sm text-ink-faint">
-                            {{ __('Aún no hay categorías. Crea la primera para poder registrar productos.') }}
-                        </td>
-                    </tr>
+                    <x-table-empty :colspan="5" icon="categorias" :title="__('Aún no hay categorías')">
+                        {{ __('Crea la primera categoría para poder registrar productos.') }}
+                        <x-slot:actions>
+                            <x-button size="sm" :href="route('admin.categorias.create')">
+                                <x-icon name="mas" class="size-4" />
+                                {{ __('Nueva categoría') }}
+                            </x-button>
+                        </x-slot:actions>
+                    </x-table-empty>
                 @endforelse
             </x-table>
         </x-card>

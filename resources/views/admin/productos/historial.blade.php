@@ -39,9 +39,9 @@
                         <td class="px-5 py-3 text-ink-soft">{{ $entrada->usuario?->name ?? '—' }}</td>
                     </tr>
                 @empty
-                    <tr>
-                        <td colspan="5" class="px-5 py-12 text-center text-sm text-ink-faint">{{ __('Sin movimientos registrados.') }}</td>
-                    </tr>
+                    <x-table-empty :colspan="5" icon="historial" :title="__('Sin movimientos registrados')">
+                        {{ __('Aquí quedará el rastro de cada cambio en los datos del producto.') }}
+                    </x-table-empty>
                 @endforelse
             </x-table>
         </x-card>

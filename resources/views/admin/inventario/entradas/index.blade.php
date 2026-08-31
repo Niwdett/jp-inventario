@@ -9,13 +9,6 @@
 
         @include('admin.inventario._nav')
 
-        @if (session('status'))
-            <x-alert variant="success">{{ session('status') }}</x-alert>
-        @endif
-        @if (session('error'))
-            <x-alert variant="danger">{{ session('error') }}</x-alert>
-        @endif
-
         <x-card flush x-data="{ anulando: null }">
             <x-table>
                 <x-slot name="head">
@@ -36,7 +29,7 @@
                             <span class="text-ink-faint">— {{ $entrada->variante->etiqueta() }}</span>
                         </td>
                         <td class="px-5 py-3 text-right tabular-nums text-success-700">+{{ $entrada->cantidad }}</td>
-                        <td class="px-5 py-3 text-right tabular-nums text-ink-soft">{{ number_format((float) $entrada->costo_unitario, 4) }}</td>
+                        <td class="px-5 py-3 text-right tabular-nums text-ink-soft"><x-money :value="$entrada->costo_unitario" :decimals="4" /></td>
                         <td class="px-5 py-3 text-ink-soft">{{ $entrada->proveedor ?: '—' }}</td>
                         <td class="px-5 py-3 text-ink-soft">{{ $entrada->usuario->name }}</td>
                         <td class="px-5 py-3 text-right">
@@ -58,7 +51,9 @@
                             <td colspan="7" class="border-l-2 border-danger-300 bg-danger-50 px-5 py-4">
                                 <form method="POST" action="{{ route('admin.inventario.entradas.anular', $entrada) }}"
                                       class="flex flex-col gap-3 sm:flex-row sm:items-start"
-                                      onsubmit="return confirm('{{ __('Anular esta entrada y recalcular el costo promedio de la variante. ¿Continuar?') }}')">
+                                      data-confirm="{{ __('Se anulará esta entrada y se recalculará el costo promedio de la variante. No se puede deshacer.') }}"
+                                      data-confirm-title="{{ __('Anular entrada') }}"
+                                      data-confirm-label="{{ __('Anular entrada') }}">
                                     @csrf
                                     @method('PATCH')
                                     <div class="flex-1">
@@ -75,7 +70,15 @@
                         </tr>
                     @endif
                 @empty
-                    <tr><td colspan="7" class="px-5 py-12 text-center text-sm text-ink-faint">{{ __('Aún no hay entradas registradas.') }}</td></tr>
+                    <x-table-empty :colspan="7" icon="entrada" :title="__('Aún no hay entradas registradas')">
+                        {{ __('Registra la compra de mercancía para sumar stock y calcular el costo promedio.') }}
+                        <x-slot:actions>
+                            <x-button size="sm" :href="route('admin.inventario.entradas.create')">
+                                <x-icon name="mas" class="size-4" />
+                                {{ __('Registrar entrada') }}
+                            </x-button>
+                        </x-slot:actions>
+                    </x-table-empty>
                 @endforelse
             </x-table>
         </x-card>
