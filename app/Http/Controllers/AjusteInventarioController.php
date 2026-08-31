@@ -6,7 +6,9 @@ use App\Http\Requests\StoreAjusteInventarioRequest;
 use App\Models\AjusteInventario;
 use App\Models\Variante;
 use App\Services\Inventario\AjustarInventario;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 /**
@@ -17,13 +19,23 @@ use Illuminate\View\View;
  */
 class AjusteInventarioController extends Controller
 {
-    public function index(): View
+    public function index(Request $request): View
     {
-        $ajustes = AjusteInventario::with('variante.producto')
-            ->latest('id')
-            ->paginate(20);
+        $request->validate(['buscar' => ['nullable', 'string', 'max:100']]);
+        $buscar = trim((string) $request->query('buscar'));
 
-        return view('admin.inventario.ajustes.index', compact('ajustes'));
+        $ajustes = AjusteInventario::with('variante.producto')
+            ->when($buscar !== '', fn (Builder $query) => $query->whereHas(
+                'variante.producto',
+                fn (Builder $producto) => $producto
+                    ->where('nombre', 'like', "%{$buscar}%")
+                    ->orWhere('codigo_interno', 'like', "%{$buscar}%"),
+            ))
+            ->latest('id')
+            ->paginate(20)
+            ->withQueryString();
+
+        return view('admin.inventario.ajustes.index', compact('ajustes', 'buscar'));
     }
 
     public function create(): View

@@ -8,6 +8,7 @@
         </x-slot>
 
         @include('admin.inventario._nav')
+        @include('admin.inventario._buscador')
 
         <x-card flush x-data="{ anulando: null }">
             <x-table>
@@ -70,15 +71,23 @@
                         </tr>
                     @endif
                 @empty
-                    <x-table-empty :colspan="7" icon="entrada" :title="__('Aún no hay entradas registradas')">
-                        {{ __('Registra la compra de mercancía para sumar stock y calcular el costo promedio.') }}
-                        <x-slot:actions>
-                            <x-button size="sm" :href="route('admin.inventario.entradas.create')">
-                                <x-icon name="mas" class="size-4" />
-                                {{ __('Registrar entrada') }}
-                            </x-button>
-                        </x-slot:actions>
-                    </x-table-empty>
+                    @if ($buscar !== '')
+                        <x-table-empty :colspan="7" icon="buscar" :title="__('Ninguna entrada coincide con «:buscar»', ['buscar' => $buscar])">
+                            <x-slot:actions>
+                                <x-button variant="secondary" size="sm" :href="route('admin.inventario.entradas.index')">{{ __('Ver todas') }}</x-button>
+                            </x-slot:actions>
+                        </x-table-empty>
+                    @else
+                        <x-table-empty :colspan="7" icon="entrada" :title="__('Aún no hay entradas registradas')">
+                            {{ __('Registra la compra de mercancía para sumar stock y calcular el costo promedio.') }}
+                            <x-slot:actions>
+                                <x-button size="sm" :href="route('admin.inventario.entradas.create')">
+                                    <x-icon name="mas" class="size-4" />
+                                    {{ __('Registrar entrada') }}
+                                </x-button>
+                            </x-slot:actions>
+                        </x-table-empty>
+                    @endif
                 @endforelse
             </x-table>
         </x-card>
