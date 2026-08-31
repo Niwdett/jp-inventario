@@ -4,9 +4,128 @@
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
 
+/*
+ * Design System JP — Etapa B (fundamentos).
+ * Base visual clara y aireada (fondo casi blanco, superficies blancas, líneas
+ * muy finas), acento azul para lo interactivo y el azul tinta reservado para la
+ * marca. Estos tokens son la única fuente de verdad del color y la tipografía;
+ * las pantallas se migran a ellos módulo a módulo.
+ */
 @theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
-        'Segoe UI Symbol', 'Noto Color Emoji';
+    /* ---------- Tipografía ---------- */
+    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji',
+        'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+    /* Marca "JP" y títulos: serif Didone de alto contraste, como el logotipo. */
+    --font-display: 'Playfair Display', 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia,
+        'Times New Roman', serif;
+
+    /* ---------- Marca · azul tinta (solo logotipo / titulares) ---------- */
+    --color-navy-50: #eef1f7;
+    --color-navy-100: #dbe1ee;
+    --color-navy-200: #b7c3db;
+    --color-navy-300: #8b9dc3;
+    --color-navy-400: #5f76a4;
+    --color-navy-500: #435a88;
+    --color-navy-600: #33466c;
+    --color-navy-700: #293a5b;
+    --color-navy-800: #1f2c46; /* color de marca principal */
+    --color-navy-900: #172033;
+    --color-navy-950: #0d1420;
+
+    /* ---------- Primario · azul interactivo (nav activo, botones, foco) ---------- */
+    --color-primary-50: #eef1fe;
+    --color-primary-100: #e0e5fc;
+    --color-primary-200: #c6cff9;
+    --color-primary-300: #a2b0f2;
+    --color-primary-400: #7d8ce8;
+    --color-primary-500: #5d69db;
+    --color-primary-600: #4a53c8; /* acción principal */
+    --color-primary-700: #3d43a6;
+    --color-primary-800: #333986;
+    --color-primary-900: #2d326b;
+
+    /* ---------- Acento · oro viejo (uso muy puntual: marca, detalles) ---------- */
+    --color-gold-50: #faf5e9;
+    --color-gold-100: #f2e7cc;
+    --color-gold-200: #e6cf9d;
+    --color-gold-300: #d7b26a;
+    --color-gold-400: #c9a15a;
+    --color-gold-500: #b5883f;
+    --color-gold-600: #946a30;
+    --color-gold-700: #6f4f26;
+
+    /* ---------- Neutros fríos y claros ---------- */
+    --color-canvas: #f6f7f9; /* fondo de la aplicación */
+    --color-surface: #ffffff; /* tarjetas y paneles */
+    --color-surface-sunken: #f1f3f5; /* zonas sutiles: thead, hover de fila */
+    --color-line: #e9ebef; /* bordes finos */
+    --color-line-strong: #dcdfe4;
+    --color-ink: #1b2330; /* texto principal */
+    --color-ink-soft: #5b6472; /* texto secundario */
+    --color-ink-faint: #929aa8; /* texto terciario / placeholder */
+
+    /* ---------- Estados ---------- */
+    --color-success-50: #ecf7f0;
+    --color-success-100: #d3edde;
+    --color-success-200: #a6dcbd;
+    --color-success-600: #2f8355;
+    --color-success-700: #21603f;
+
+    --color-warning-50: #fdf4e6;
+    --color-warning-100: #f9e6c4;
+    --color-warning-200: #f0cf8c;
+    --color-warning-600: #a5741d;
+    --color-warning-700: #815a16;
+
+    --color-danger-50: #fdeeed;
+    --color-danger-100: #f9d8d5;
+    --color-danger-200: #eeb2ac;
+    --color-danger-600: #c0392f;
+    --color-danger-700: #952c25;
+
+    --color-info-50: #eaf1fb;
+    --color-info-100: #d5e2f6;
+    --color-info-200: #aec6ec;
+    --color-info-600: #2f66b5;
+    --color-info-700: #244e8b;
+
+    /* ---------- Radios ---------- */
+    --radius-lg: 0.625rem;
+    --radius-xl: 0.875rem;
+    --radius-2xl: 1.25rem;
+
+    /* ---------- Sombras (muy tenues, tinte frío) ---------- */
+    --shadow-2xs: 0 1px 1px rgb(15 23 42 / 0.03);
+    --shadow-xs: 0 1px 2px rgb(15 23 42 / 0.04);
+    --shadow-sm: 0 1px 2px rgb(15 23 42 / 0.04), 0 1px 3px rgb(15 23 42 / 0.03);
+    --shadow: 0 1px 2px rgb(15 23 42 / 0.03), 0 4px 10px rgb(15 23 42 / 0.05);
+    --shadow-md: 0 2px 6px rgb(15 23 42 / 0.05), 0 8px 20px rgb(15 23 42 / 0.06);
+    --shadow-lg: 0 12px 28px rgb(15 23 42 / 0.10), 0 4px 8px rgb(15 23 42 / 0.05);
+    --shadow-xl: 0 20px 44px rgb(15 23 42 / 0.13), 0 6px 12px rgb(15 23 42 / 0.06);
+
+    /* ---------- Movimiento ---------- */
+    --ease-fluid: cubic-bezier(0.3, 0, 0, 1);
+    --default-transition-duration: 180ms;
+    --default-transition-timing-function: cubic-bezier(0.3, 0, 0, 1);
+}
+
+@layer base {
+    body {
+        background-color: var(--color-canvas);
+        color: var(--color-ink);
+    }
+}
+
+/* Punto 17 del rediseño: respetar la preferencia del sistema de reducir movimiento. */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
 }
 
 [x-cloak] {

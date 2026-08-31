@@ -1,55 +1,46 @@
 <x-app-layout>
-    <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">{{ __('Devoluciones') }}</h2>
-    </x-slot>
+    <x-page :title="__('Devoluciones')">
 
-    <div class="py-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-4">
+        @if (session('status'))
+            <x-alert variant="success">{{ session('status') }}</x-alert>
+        @endif
 
-            @if (session('status'))
-                <div class="bg-green-50 border border-green-200 text-green-800 rounded-md p-4">{{ session('status') }}</div>
-            @endif
+        <x-card flush>
+            <x-table>
+                <x-slot name="head">
+                    <th class="px-5 py-3 font-medium">{{ __('Fecha') }}</th>
+                    <th class="px-5 py-3 font-medium">{{ __('Venta') }}</th>
+                    <th class="px-5 py-3 font-medium">{{ __('Cliente') }}</th>
+                    <th class="px-5 py-3 font-medium">{{ __('Estado') }}</th>
+                    <th class="px-5 py-3 text-right font-medium">{{ __('Saldo generado') }}</th>
+                    <th class="px-5 py-3 font-medium">{{ __('Validó') }}</th>
+                </x-slot>
 
-            <div class="bg-white shadow sm:rounded-lg overflow-hidden">
-                <table class="min-w-full divide-y divide-gray-200 text-sm">
-                    <thead class="bg-gray-50 text-left text-xs uppercase tracking-wider text-gray-500">
-                        <tr>
-                            <th class="px-6 py-3">{{ __('Fecha') }}</th>
-                            <th class="px-6 py-3">{{ __('Venta') }}</th>
-                            <th class="px-6 py-3">{{ __('Cliente') }}</th>
-                            <th class="px-6 py-3">{{ __('Estado') }}</th>
-                            <th class="px-6 py-3 text-right">{{ __('Saldo generado') }}</th>
-                            <th class="px-6 py-3">{{ __('Validó') }}</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-gray-100">
-                        @forelse ($devoluciones as $devolucion)
-                            <tr>
-                                <td class="px-6 py-4">{{ $devolucion->fecha->format('Y-m-d') }}</td>
-                                <td class="px-6 py-4">
-                                    <a href="{{ route('ventas.show', $devolucion->venta) }}" class="text-indigo-600 hover:text-indigo-900 font-mono">{{ $devolucion->venta->numero }}</a>
-                                </td>
-                                <td class="px-6 py-4">{{ $devolucion->venta->cliente?->nombre ?? '—' }}</td>
-                                <td class="px-6 py-4">
-                                    @if ($devolucion->estado === \App\Enums\EstadoDevolucion::Validada)
-                                        <span class="inline-flex px-2 py-0.5 rounded-full bg-green-100 text-green-800 text-xs">{{ __('Validada') }}</span>
-                                    @else
-                                        <span class="inline-flex px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 text-xs">{{ __('Rechazada') }}</span>
-                                    @endif
-                                </td>
-                                <td class="px-6 py-4 text-right">{{ number_format((float) $devolucion->saldo_generado, 2) }}</td>
-                                <td class="px-6 py-4">{{ $devolucion->usuario?->name }}</td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="6" class="px-6 py-8 text-center text-gray-500">{{ __('Aún no se han registrado devoluciones.') }}</td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
+                @forelse ($devoluciones as $devolucion)
+                    <tr class="transition-colors hover:bg-surface-sunken/60">
+                        <td class="whitespace-nowrap px-5 py-3 text-ink-soft">{{ $devolucion->fecha->format('Y-m-d') }}</td>
+                        <td class="px-5 py-3">
+                            <a href="{{ route('ventas.show', $devolucion->venta) }}" class="font-mono text-sm font-medium text-primary-700 hover:text-primary-800">{{ $devolucion->venta->numero }}</a>
+                        </td>
+                        <td class="px-5 py-3 text-ink">{{ $devolucion->venta->cliente?->nombre ?? '—' }}</td>
+                        <td class="px-5 py-3">
+                            @if ($devolucion->estado === \App\Enums\EstadoDevolucion::Validada)
+                                <x-badge variant="success">{{ __('Validada') }}</x-badge>
+                            @else
+                                <x-badge>{{ __('Rechazada') }}</x-badge>
+                            @endif
+                        </td>
+                        <td class="px-5 py-3 text-right tabular-nums text-ink">{{ number_format((float) $devolucion->saldo_generado, 2) }}</td>
+                        <td class="px-5 py-3 text-ink-soft">{{ $devolucion->usuario?->name }}</td>
+                    </tr>
+                @empty
+                    <tr>
+                        <td colspan="6" class="px-5 py-12 text-center text-sm text-ink-faint">{{ __('Aún no se han registrado devoluciones.') }}</td>
+                    </tr>
+                @endforelse
+            </x-table>
+        </x-card>
 
-            {{ $devoluciones->links() }}
-        </div>
-    </div>
+        {{ $devoluciones->links() }}
+    </x-page>
 </x-app-layout>

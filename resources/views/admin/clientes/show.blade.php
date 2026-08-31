@@ -1,93 +1,84 @@
 <x-app-layout>
-    <x-slot name="header">
-        <div class="flex items-center justify-between">
-            <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-                {{ __('Cliente') }}: {{ $cliente->nombre }}
-            </h2>
-            <div class="flex items-center gap-4">
-                @can('update', $cliente)
-                    <a href="{{ route('admin.clientes.edit', $cliente) }}" class="text-sm text-indigo-600 hover:text-indigo-900 underline">{{ __('Editar') }}</a>
-                @endcan
-                <a href="{{ route('admin.clientes.index') }}" class="text-sm text-gray-600 hover:text-gray-900 underline">{{ __('← Volver') }}</a>
-            </div>
-        </div>
-    </x-slot>
+    <x-page :title="$cliente->nombre" :subtitle="__('Cliente')">
+        <x-slot name="actions">
+            @can('update', $cliente)
+                <x-button variant="secondary" :href="route('admin.clientes.edit', $cliente)">
+                    <x-icon name="editar" class="size-4" />
+                    {{ __('Editar') }}
+                </x-button>
+            @endcan
+            <x-button variant="secondary" :href="route('admin.clientes.index')">
+                <x-icon name="arrow-left" class="size-4" />
+                {{ __('Volver') }}
+            </x-button>
+        </x-slot>
 
-    <div class="py-12">
-        <div class="max-w-4xl mx-auto sm:px-6 lg:px-8 space-y-6">
+        @if (session('status'))
+            <x-alert variant="success">{{ session('status') }}</x-alert>
+        @endif
+        @if (session('error'))
+            <x-alert variant="danger">{{ session('error') }}</x-alert>
+        @endif
 
-            @if (session('status'))
-                <div class="bg-green-50 border border-green-200 text-green-800 rounded-md p-4">{{ session('status') }}</div>
-            @endif
-            @if (session('error'))
-                <div class="bg-red-50 border border-red-200 text-red-800 rounded-md p-4">{{ session('error') }}</div>
-            @endif
-
-            <div class="bg-white shadow sm:rounded-lg p-6">
-                <dl class="grid grid-cols-2 sm:grid-cols-3 gap-x-8 gap-y-2 text-sm">
-                    <dt class="text-gray-500">{{ __('Teléfono') }}</dt><dd class="sm:col-span-2">{{ $cliente->telefono ?? '—' }}</dd>
-                    <dt class="text-gray-500">{{ __('Cédula') }}</dt><dd class="sm:col-span-2 font-mono">{{ $cliente->cedula ?? '—' }}</dd>
-                    <dt class="text-gray-500">{{ __('Saldo a favor') }}</dt>
-                    <dd class="sm:col-span-2 font-semibold {{ (float) $cliente->saldo_favor > 0 ? 'text-green-700' : 'text-gray-800' }}">
+        <x-card>
+            <dl class="grid grid-cols-1 gap-x-8 gap-y-3 text-sm sm:grid-cols-3">
+                <div class="flex justify-between gap-4 sm:block">
+                    <dt class="text-ink-faint">{{ __('Teléfono') }}</dt><dd class="mt-0.5 text-ink">{{ $cliente->telefono ?? '—' }}</dd>
+                </div>
+                <div class="flex justify-between gap-4 sm:block">
+                    <dt class="text-ink-faint">{{ __('Cédula') }}</dt><dd class="mt-0.5 font-mono text-ink">{{ $cliente->cedula ?? '—' }}</dd>
+                </div>
+                <div class="flex justify-between gap-4 sm:block">
+                    <dt class="text-ink-faint">{{ __('Saldo a favor') }}</dt>
+                    <dd class="mt-0.5 font-semibold tabular-nums {{ (float) $cliente->saldo_favor > 0 ? 'text-success-700' : 'text-ink' }}">
                         {{ number_format((float) $cliente->saldo_favor, 2) }}
                     </dd>
-                </dl>
-            </div>
+                </div>
+            </dl>
+        </x-card>
 
-            <div class="bg-white shadow sm:rounded-lg overflow-hidden">
-                <h3 class="px-6 py-3 font-semibold text-gray-800 border-b border-gray-100">{{ __('Ventas a crédito con saldo pendiente') }}</h3>
-                <table class="min-w-full divide-y divide-gray-200 text-sm">
-                    <thead class="bg-gray-50 text-left text-xs uppercase tracking-wider text-gray-500">
-                        <tr>
-                            <th class="px-6 py-3">{{ __('Venta') }}</th>
-                            <th class="px-6 py-3">{{ __('Fecha') }}</th>
-                            <th class="px-6 py-3 text-right">{{ __('Deuda inicial') }}</th>
-                            <th class="px-6 py-3 text-right">{{ __('Pendiente') }}</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-gray-100">
-                        @forelse ($cliente->ventasACredito as $venta)
-                            <tr>
-                                <td class="px-6 py-4">
-                                    <a href="{{ route('ventas.show', $venta) }}" class="text-indigo-600 hover:text-indigo-900 font-mono">{{ $venta->numero }}</a>
-                                </td>
-                                <td class="px-6 py-4">{{ $venta->fecha_venta->format('Y-m-d') }}</td>
-                                <td class="px-6 py-4 text-right">{{ number_format((float) $venta->credito_monto, 2) }}</td>
-                                <td class="px-6 py-4 text-right font-semibold">{{ number_format((float) $venta->credito_saldo_pendiente, 2) }}</td>
-                            </tr>
-                        @empty
-                            <tr><td colspan="4" class="px-6 py-6 text-center text-gray-500">{{ __('Sin deudas pendientes.') }}</td></tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
+        <x-card :title="__('Ventas a crédito con saldo pendiente')" flush>
+            <x-table>
+                <x-slot name="head">
+                    <th class="px-5 py-3 font-medium">{{ __('Venta') }}</th>
+                    <th class="px-5 py-3 font-medium">{{ __('Fecha') }}</th>
+                    <th class="px-5 py-3 text-right font-medium">{{ __('Deuda inicial') }}</th>
+                    <th class="px-5 py-3 text-right font-medium">{{ __('Pendiente') }}</th>
+                </x-slot>
+                @forelse ($cliente->ventasACredito as $venta)
+                    <tr class="transition-colors hover:bg-surface-sunken/60">
+                        <td class="px-5 py-3">
+                            <a href="{{ route('ventas.show', $venta) }}" class="font-mono text-sm font-medium text-primary-700 hover:text-primary-800">{{ $venta->numero }}</a>
+                        </td>
+                        <td class="px-5 py-3 text-ink-soft">{{ $venta->fecha_venta->format('Y-m-d') }}</td>
+                        <td class="px-5 py-3 text-right tabular-nums text-ink-soft">{{ number_format((float) $venta->credito_monto, 2) }}</td>
+                        <td class="px-5 py-3 text-right font-semibold tabular-nums text-ink">{{ number_format((float) $venta->credito_saldo_pendiente, 2) }}</td>
+                    </tr>
+                @empty
+                    <tr><td colspan="4" class="px-5 py-10 text-center text-sm text-ink-faint">{{ __('Sin deudas pendientes.') }}</td></tr>
+                @endforelse
+            </x-table>
+        </x-card>
 
-            <div class="bg-white shadow sm:rounded-lg overflow-hidden">
-                <h3 class="px-6 py-3 font-semibold text-gray-800 border-b border-gray-100">{{ __('Movimientos de saldo a favor') }}</h3>
-                <table class="min-w-full divide-y divide-gray-200 text-sm">
-                    <thead class="bg-gray-50 text-left text-xs uppercase tracking-wider text-gray-500">
-                        <tr>
-                            <th class="px-6 py-3">{{ __('Fecha') }}</th>
-                            <th class="px-6 py-3">{{ __('Tipo') }}</th>
-                            <th class="px-6 py-3 text-right">{{ __('Monto') }}</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-gray-100">
-                        @forelse ($cliente->saldoFavorMovimientos as $movimiento)
-                            <tr>
-                                <td class="px-6 py-4">{{ $movimiento->created_at?->format('Y-m-d H:i') }}</td>
-                                <td class="px-6 py-4">{{ $movimiento->tipo->label() }}</td>
-                                <td class="px-6 py-4 text-right {{ (float) $movimiento->monto < 0 ? 'text-red-600' : 'text-green-700' }}">
-                                    {{ number_format((float) $movimiento->monto, 2) }}
-                                </td>
-                            </tr>
-                        @empty
-                            <tr><td colspan="3" class="px-6 py-6 text-center text-gray-500">{{ __('Sin movimientos de saldo a favor.') }}</td></tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
-
-        </div>
-    </div>
+        <x-card :title="__('Movimientos de saldo a favor')" flush>
+            <x-table>
+                <x-slot name="head">
+                    <th class="px-5 py-3 font-medium">{{ __('Fecha') }}</th>
+                    <th class="px-5 py-3 font-medium">{{ __('Tipo') }}</th>
+                    <th class="px-5 py-3 text-right font-medium">{{ __('Monto') }}</th>
+                </x-slot>
+                @forelse ($cliente->saldoFavorMovimientos as $movimiento)
+                    <tr class="transition-colors hover:bg-surface-sunken/60">
+                        <td class="whitespace-nowrap px-5 py-3 text-ink-soft">{{ $movimiento->created_at?->format('Y-m-d H:i') }}</td>
+                        <td class="px-5 py-3 text-ink">{{ $movimiento->tipo->label() }}</td>
+                        <td class="px-5 py-3 text-right tabular-nums {{ (float) $movimiento->monto < 0 ? 'text-danger-600' : 'text-success-700' }}">
+                            {{ number_format((float) $movimiento->monto, 2) }}
+                        </td>
+                    </tr>
+                @empty
+                    <tr><td colspan="3" class="px-5 py-10 text-center text-sm text-ink-faint">{{ __('Sin movimientos de saldo a favor.') }}</td></tr>
+                @endforelse
+            </x-table>
+        </x-card>
+    </x-page>
 </x-app-layout>
