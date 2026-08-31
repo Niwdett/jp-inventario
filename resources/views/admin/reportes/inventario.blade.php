@@ -1,5 +1,8 @@
 <x-app-layout>
     <x-page :title="__('Inventario disponible')">
+        <x-slot name="actions">
+            <x-print-button />
+        </x-slot>
         @include('admin.reportes._nav')
 
         <div class="flex flex-wrap items-start justify-between gap-4">
@@ -8,7 +11,7 @@
                 <x-reportes.tarjeta :titulo="__('Valor del inventario')" :valor="number_format((float) $valorTotal, 2)"
                                     :detalle="__('stock × costo promedio')" />
             </div>
-            <form method="GET" action="{{ route('admin.reportes.inventario') }}">
+            <form method="GET" action="{{ route('admin.reportes.inventario') }}" class="print:hidden">
                 <label class="inline-flex items-center gap-2 text-sm text-ink-soft">
                     <input type="checkbox" name="incluir_agotadas" value="1" @checked($incluirAgotadas) onchange="this.form.submit()"
                            class="rounded border-line text-primary-600 focus:ring-2 focus:ring-primary-200">

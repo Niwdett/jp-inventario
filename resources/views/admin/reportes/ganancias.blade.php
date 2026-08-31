@@ -4,6 +4,9 @@
 
 <x-app-layout>
     <x-page :title="__('Reporte de ganancias')">
+        <x-slot name="actions">
+            <x-print-button />
+        </x-slot>
         @include('admin.reportes._nav')
         @include('admin.reportes._filtros', ['ruta' => 'admin.reportes.ganancias', 'comparable' => true])
 

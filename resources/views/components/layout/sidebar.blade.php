@@ -11,7 +11,7 @@
 
 <aside x-cloak
        :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'"
-       class="fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-line bg-surface transition-transform duration-200 ease-out lg:translate-x-0">
+       class="fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-line bg-surface transition-transform duration-200 ease-out lg:translate-x-0 print:hidden">
 
     {{-- Marca --}}
     <div class="flex h-16 items-center justify-between border-b border-line px-4">

@@ -15,11 +15,17 @@
             </div>
         </x-slot>
         <x-slot name="actions">
-            <x-button variant="secondary" :href="route('ventas.index')">
+            <x-button variant="secondary" :href="route('ventas.index')" class="print:hidden">
                 <x-icon name="arrow-left" class="size-4" />
                 {{ __('Volver') }}
             </x-button>
+            <x-print-button />
         </x-slot>
+
+        <div class="hidden print:block">
+            <p class="font-display text-xl font-bold text-ink">{{ config('app.name', 'JP') }} · {{ __('Ropa & Calzado') }}</p>
+            <p class="text-sm text-ink-soft">{{ __('Comprobante de venta') }} · {{ $venta->numero }} · {{ $venta->fecha_venta->format('Y-m-d H:i') }}</p>
+        </div>
 
         <x-card>
             <dl class="grid grid-cols-1 gap-x-8 gap-y-3 text-sm sm:grid-cols-2 lg:grid-cols-3">
@@ -150,7 +156,7 @@
                 @endif
 
                 @can('abonar', $venta)
-                    <form method="POST" action="{{ route('admin.creditos.abonos.store', $venta) }}" class="mt-4 flex flex-wrap items-end gap-3 border-t border-line pt-4">
+                    <form method="POST" action="{{ route('admin.creditos.abonos.store', $venta) }}" class="mt-4 flex flex-wrap items-end gap-3 border-t border-line pt-4 print:hidden">
                         @csrf
                         <div>
                             <x-input-label for="monto" :value="__('Monto del abono')" />
@@ -171,7 +177,7 @@
         @endif
 
         @can('entregar', $venta)
-            <x-card>
+            <x-card class="print:hidden">
                 <div class="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <p class="font-medium text-ink">{{ __('Entrega') }}</p>
@@ -193,7 +199,7 @@
         @endcan
 
         @can('anular', $venta)
-            <x-card class="border-danger-200">
+            <x-card class="border-danger-200 print:hidden">
                 <h3 class="font-semibold text-ink">{{ __('Anular venta') }}</h3>
                 <p class="mt-1 text-sm text-ink-soft">{{ __('Reintegra el stock automáticamente. Solo posible antes de la entrega.') }}</p>
                 <form method="POST" action="{{ route('ventas.anular', $venta) }}" class="mt-3 space-y-3"
@@ -213,7 +219,7 @@
         @endcan
 
         @if (auth()->user()->esAdministrador() && $venta->entregada_at && $venta->estado === \App\Enums\EstadoVenta::Confirmada)
-            <x-card>
+            <x-card class="print:hidden">
                 <div class="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <h3 class="font-semibold text-ink">{{ __('Devoluciones') }}</h3>

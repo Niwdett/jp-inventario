@@ -31,7 +31,7 @@
         @if (session('error')) add({ variant: 'danger', message: @js(session('error')) }); @endif
     "
     x-on:toast.window="add($event.detail || {})"
-    class="pointer-events-none fixed inset-x-0 top-0 z-[60] flex flex-col items-center gap-2 p-4 sm:inset-x-auto sm:right-0 sm:items-end"
+    class="pointer-events-none fixed inset-x-0 top-0 z-[60] flex flex-col items-center gap-2 p-4 print:hidden sm:inset-x-auto sm:right-0 sm:items-end"
     x-cloak
 >
     <template x-for="toast in toasts" :key="toast.id">

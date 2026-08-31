@@ -1,5 +1,8 @@
 <x-app-layout>
     <x-page :title="__('Reporte de ventas por periodo')">
+        <x-slot name="actions">
+            <x-print-button />
+        </x-slot>
         @include('admin.reportes._nav')
         @include('admin.reportes._filtros', ['ruta' => 'admin.reportes.ventas'])
 

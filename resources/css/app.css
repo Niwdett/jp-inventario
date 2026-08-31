@@ -133,6 +133,25 @@
 }
 
 /*
+ * Impresión (tarea 6): comprobante de venta y reportes en papel.
+ * El shell (sidebar/topbar) y los controles llevan `print:hidden` en el markup;
+ * aquí solo el aseo general de la página impresa.
+ */
+@media print {
+    body {
+        background: #fff;
+    }
+
+    main :where(.rounded-xl, .rounded-2xl, table, tr) {
+        break-inside: avoid;
+    }
+
+    @page {
+        margin: 1.5cm;
+    }
+}
+
+/*
  * Tabla → tarjetas apiladas en móvil (tarea 5 del pulido visual).
  * Se activa con <x-table stack>. Cada fila queda como una sección de la tarjeta
  * y cada celda muestra su etiqueta (data-label) a la izquierda y el valor a la
