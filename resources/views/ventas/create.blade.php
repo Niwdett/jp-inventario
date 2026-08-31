@@ -1,5 +1,17 @@
 @php
     $inputSm = 'mt-1 block w-full rounded-lg border-line bg-surface text-sm text-ink shadow-xs focus:border-primary-500 focus:ring-2 focus:ring-primary-200';
+
+    // Restaura las líneas tras un error de validación; si no, una línea vacía.
+    $lineasIniciales = collect(old('lineas', [[]]))
+        ->map(fn ($l) => is_array($l) ? [
+            'variante_id' => $l['variante_id'] ?? '',
+            'cantidad' => $l['cantidad'] ?? 1,
+            'precio_unitario' => $l['precio_unitario'] ?? '',
+            'descuento_porcentaje' => $l['descuento_porcentaje'] ?? '',
+        ] : null)
+        ->filter()
+        ->values()
+        ->whenEmpty(fn () => collect([['variante_id' => '', 'cantidad' => 1, 'precio_unitario' => '', 'descuento_porcentaje' => '']]));
 @endphp
 
 <x-app-layout>
@@ -12,14 +24,22 @@
                   x-data="{
                       esAdmin: {{ auth()->user()->esAdministrador() ? 'true' : 'false' }},
                       variantes: {{ Js::from($variantes) }},
+                      preciosReferencia: {{ Js::from($preciosReferencia) }},
                       clientes: {{ Js::from($clientes) }},
                       clientesEnMora: {{ Js::from($clientesEnMora) }},
                       cliente_id: '{{ old('cliente_id') }}',
                       metodo_pago: '{{ old('metodo_pago', 'efectivo') }}',
                       saldo_favor_aplicado: '{{ old('saldo_favor_aplicado') }}',
-                      lineas: [{ variante_id: '', cantidad: 1, precio_unitario: '', descuento_porcentaje: '' }],
+                      lineas: {{ Js::from($lineasIniciales) }},
                       agregar() { this.lineas.push({ variante_id: '', cantidad: 1, precio_unitario: '', descuento_porcentaje: '' }) },
                       quitar(i) { if (this.lineas.length > 1) this.lineas.splice(i, 1) },
+                      sugerirPrecio(l) {
+                          const sugerido = this.preciosReferencia[l.variante_id];
+                          if (sugerido !== undefined && (l.precio_unitario === '' || l.precio_unitario === null)) {
+                              l.precio_unitario = sugerido;
+                          }
+                      },
+                      formatoMoneda(v) { return Number(v || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); },
                       importe(l) {
                           const bruto = (parseFloat(l.precio_unitario) || 0) * (parseInt(l.cantidad) || 0);
                           const desc = parseFloat(l.descuento_porcentaje) || 0;
@@ -41,7 +61,8 @@
                         <div class="grid grid-cols-12 items-end gap-2 border-b border-line pb-3">
                             <div class="col-span-12 sm:col-span-5">
                                 <x-input-label ::for="'variante_' + i" :value="__('Variante')" />
-                                <select ::id="'variante_' + i" :name="'lineas[' + i + '][variante_id]'" x-model="linea.variante_id" required
+                                <select ::id="'variante_' + i" :name="'lineas[' + i + '][variante_id]'" x-model="linea.variante_id"
+                                        x-on:change="sugerirPrecio(linea)" required
                                         class="{{ $inputSm }}">
                                     <option value="">{{ __('— Selecciona —') }}</option>
                                     <template x-for="(label, id) in variantes" :key="id">
@@ -55,7 +76,17 @@
                                        class="{{ $inputSm }}">
                             </div>
                             <div class="col-span-4 sm:col-span-2">
-                                <x-input-label ::for="'precio_' + i" :value="__('Precio')" />
+                                <x-input-label ::for="'precio_' + i">
+                                    <span class="inline-flex items-center gap-1">
+                                        {{ __('Precio') }}
+                                        <x-info-hint :title="__('Precio de referencia')" align="right">
+                                            <template x-if="preciosReferencia[linea.variante_id] !== undefined">
+                                                <span class="mb-1 block font-medium text-ink" x-text="'$ ' + formatoMoneda(preciosReferencia[linea.variante_id])"></span>
+                                            </template>
+                                            {{ __('Precio sugerido para este producto. Puedes modificarlo para aplicar descuentos u otros ajustes.') }}
+                                        </x-info-hint>
+                                    </span>
+                                </x-input-label>
                                 <input type="number" min="0" step="0.01" x-model="linea.precio_unitario" :name="'lineas[' + i + '][precio_unitario]'" required
                                        class="{{ $inputSm }}">
                             </div>

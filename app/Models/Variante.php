@@ -112,6 +112,22 @@ class Variante extends Model
     }
 
     /**
+     * Precio de referencia (sugerido) de cada variante activa, `[id => "45000.00"]`,
+     * para pre-llenar el precio al agregar una línea de venta. Es solo una
+     * sugerencia: el vendedor puede cambiarlo (descuentos, ajustes).
+     *
+     * @return Collection<int, string>
+     */
+    public static function preciosReferenciaPorId(): Collection
+    {
+        return static::query()
+            ->join('productos', 'productos.id', '=', 'variantes.producto_id')
+            ->whereNull('productos.deleted_at')
+            ->pluck('productos.precio_referencia', 'variantes.id')
+            ->map(fn ($precio) => (string) $precio);
+    }
+
+    /**
      * ¿Esta variante está en o por debajo del umbral de stock bajo de su producto? (RF-007)
      */
     public function estaEnStockBajo(): bool
