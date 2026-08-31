@@ -10,3 +10,4 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/Models/Cliente.php | .ai/rules/models.md |
 | app/Observers/** | .ai/rules/observers.md |
 | app/Policies/** | .ai/rules/policies.md |
+| resources/** | .ai/rules/resources.md |

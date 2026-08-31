@@ -7,17 +7,17 @@
 
 @php
     $tonos = [
-        'neutral' => 'text-gray-900',
-        'positivo' => 'text-green-700',
-        'negativo' => 'text-red-700',
-        'alerta' => 'text-amber-700',
+        'neutral' => 'text-ink',
+        'positivo' => 'text-success-700',
+        'negativo' => 'text-danger-600',
+        'alerta' => 'text-warning-700',
     ];
 @endphp
 
-<div {{ $attributes->merge(['class' => 'bg-white shadow sm:rounded-lg p-4']) }}>
-    <p class="text-xs uppercase tracking-wider text-gray-500">{{ $titulo }}</p>
-    <p class="mt-1 text-2xl font-semibold {{ $tonos[$tono] ?? $tonos['neutral'] }}">{{ $valor }}</p>
+<div {{ $attributes->merge(['class' => 'rounded-xl border border-line bg-surface p-4 shadow-xs transition-shadow']) }}>
+    <p class="text-xs font-medium uppercase tracking-wide text-ink-faint">{{ $titulo }}</p>
+    <p class="mt-1.5 text-2xl font-semibold tabular-nums {{ $tonos[$tono] ?? $tonos['neutral'] }}">{{ $valor }}</p>
     @if ($detalle)
-        <p class="mt-1 text-xs text-gray-400">{{ $detalle }}</p>
+        <p class="mt-1 text-xs text-ink-faint">{{ $detalle }}</p>
     @endif
 </div>
