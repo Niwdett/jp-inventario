@@ -7,6 +7,7 @@ use App\Exceptions\AbonoInvalidoException;
 use App\Models\Abono;
 use App\Models\User;
 use App\Models\Venta;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -23,11 +24,36 @@ use Illuminate\Support\Facades\DB;
 class RegistrarAbono
 {
     /**
+     * Si se pasa `$idempotencyKey` y ya existe un abono con esa clave, se
+     * devuelve ese abono sin registrar otro (protege contra el doble envío del
+     * formulario). El índice UNIQUE de `abonos.idempotency_key` cubre además dos
+     * peticiones simultáneas.
+     *
      * @throws AbonoInvalidoException
      */
-    public function ejecutar(Venta $venta, string $monto, Carbon $fecha, User $usuario): Abono
+    public function ejecutar(Venta $venta, string $monto, Carbon $fecha, User $usuario, ?string $idempotencyKey = null): Abono
     {
-        return DB::transaction(function () use ($venta, $monto, $fecha, $usuario) {
+        if ($idempotencyKey !== null && $previo = Abono::where('idempotency_key', $idempotencyKey)->first()) {
+            return $previo;
+        }
+
+        try {
+            return $this->registrar($venta, $monto, $fecha, $usuario, $idempotencyKey);
+        } catch (UniqueConstraintViolationException $e) {
+            if ($idempotencyKey !== null) {
+                return Abono::where('idempotency_key', $idempotencyKey)->firstOrFail();
+            }
+
+            throw $e;
+        }
+    }
+
+    /**
+     * @throws AbonoInvalidoException
+     */
+    private function registrar(Venta $venta, string $monto, Carbon $fecha, User $usuario, ?string $idempotencyKey): Abono
+    {
+        return DB::transaction(function () use ($venta, $monto, $fecha, $usuario, $idempotencyKey) {
             /** @var Venta $venta */
             $venta = Venta::whereKey($venta->getKey())->lockForUpdate()->firstOrFail();
 
@@ -41,11 +67,13 @@ class RegistrarAbono
                 throw AbonoInvalidoException::sobrepago($venta, $monto, $pendiente);
             }
 
-            $abono = $venta->abonos()->create([
+            $abono = $venta->abonos()->make([
                 'monto' => $monto,
                 'fecha' => $fecha->toDateString(),
                 'usuario_id' => $usuario->id,
             ]);
+            $abono->idempotency_key = $idempotencyKey;
+            $abono->save();
 
             $venta->credito_saldo_pendiente = bcsub($pendiente, $monto, 2);
             $venta->save();

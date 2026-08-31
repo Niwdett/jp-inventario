@@ -45,6 +45,7 @@ class CreditoController extends Controller
                 $request->montoParaServicio(),
                 Carbon::parse($request->validated('fecha')),
                 $request->user(),
+                $request->idempotencyKey(),
             );
         } catch (AbonoInvalidoException $e) {
             return back()->with('error', $e->getMessage());

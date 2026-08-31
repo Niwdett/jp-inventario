@@ -110,6 +110,7 @@ class VentaController extends Controller
                 usuario: $request->user(),
                 saldoFavorAplicado: $request->saldoFavorAplicadoParaServicio(),
                 autorizarMora: $request->autorizarMora(),
+                idempotencyKey: $request->idempotencyKey(),
             );
         } catch (StockInsuficienteException|SaldoFavorInsuficienteException|ClienteEnMoraException|PagoVentaInvalidoException $e) {
             return back()->withInput()->with('error', $e->getMessage());

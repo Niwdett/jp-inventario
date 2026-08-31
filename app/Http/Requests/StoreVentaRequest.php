@@ -38,7 +38,17 @@ class StoreVentaRequest extends FormRequest
             ],
             'saldo_favor_aplicado' => ['nullable', 'numeric', 'min:0', 'max:99999999'],
             'autorizar_mora' => ['nullable', 'boolean'],
+            'idempotency_key' => ['nullable', 'uuid'],
         ];
+    }
+
+    /**
+     * Clave de idempotencia del formulario (evita duplicar la venta ante un
+     * doble envío). Puede faltar si la petición no viene del formulario.
+     */
+    public function idempotencyKey(): ?string
+    {
+        return $this->validated('idempotency_key');
     }
 
     public function withValidator(Validator $validator): void

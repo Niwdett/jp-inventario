@@ -19,12 +19,22 @@ class StoreAbonoRequest extends FormRequest
         return [
             'monto' => ['required', 'numeric', 'gt:0', 'max:99999999'],
             'fecha' => ['required', 'date', 'before_or_equal:today'],
+            'idempotency_key' => ['nullable', 'uuid'],
         ];
     }
 
     public function montoParaServicio(): string
     {
         return number_format((float) $this->validated('monto'), 2, '.', '');
+    }
+
+    /**
+     * Clave de idempotencia del formulario (evita duplicar el abono ante un
+     * doble envío).
+     */
+    public function idempotencyKey(): ?string
+    {
+        return $this->validated('idempotency_key');
     }
 
     /**
