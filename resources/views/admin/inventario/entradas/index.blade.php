@@ -29,7 +29,7 @@
                             <span class="text-ink-faint">— {{ $entrada->variante->etiqueta() }}</span>
                         </td>
                         <td class="px-5 py-3 text-right tabular-nums text-success-700">+{{ $entrada->cantidad }}</td>
-                        <td class="px-5 py-3 text-right tabular-nums text-ink-soft">{{ number_format((float) $entrada->costo_unitario, 4) }}</td>
+                        <td class="px-5 py-3 text-right tabular-nums text-ink-soft"><x-money :value="$entrada->costo_unitario" :decimals="4" /></td>
                         <td class="px-5 py-3 text-ink-soft">{{ $entrada->proveedor ?: '—' }}</td>
                         <td class="px-5 py-3 text-ink-soft">{{ $entrada->usuario->name }}</td>
                         <td class="px-5 py-3 text-right">

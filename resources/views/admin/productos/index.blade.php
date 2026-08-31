@@ -35,7 +35,7 @@
                             @endif
                         </td>
                         <td class="px-5 py-3 text-ink-soft" data-label="{{ __('Categoría') }}">{{ $producto->categoria->nombre }}</td>
-                        <td class="px-5 py-3 text-right tabular-nums text-ink-soft" data-label="{{ __('Precio ref.') }}">{{ number_format((float) $producto->precio_referencia, 2) }}</td>
+                        <td class="px-5 py-3 text-right tabular-nums text-ink-soft" data-label="{{ __('Precio ref.') }}"><x-money :value="$producto->precio_referencia" /></td>
                         <td class="px-5 py-3 text-right" data-label="{{ __('Stock') }}">
                             <span class="inline-flex items-center gap-1.5">
                                 <span class="tabular-nums">{{ (int) $producto->stock_total }}</span>

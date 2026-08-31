@@ -51,7 +51,7 @@
                 @if ((float) $venta->saldo_favor_aplicado > 0)
                     <div class="flex justify-between gap-4 sm:block">
                         <dt class="text-ink-faint">{{ __('Saldo a favor aplicado') }}</dt>
-                        <dd class="mt-0.5 tabular-nums text-ink">{{ number_format((float) $venta->saldo_favor_aplicado, 2) }}</dd>
+                        <dd class="mt-0.5 tabular-nums text-ink"><x-money :value="$venta->saldo_favor_aplicado" /></dd>
                     </div>
                 @endif
                 <div class="flex justify-between gap-4 sm:block">
@@ -87,24 +87,24 @@
                             <span class="text-ink-faint">— {{ $linea->variante->etiqueta() }}</span>
                         </td>
                         <td class="px-5 py-3 text-right tabular-nums">{{ $linea->cantidad }}</td>
-                        <td class="px-5 py-3 text-right tabular-nums text-ink-soft">{{ number_format((float) $linea->precio_unitario, 2) }}</td>
+                        <td class="px-5 py-3 text-right tabular-nums text-ink-soft"><x-money :value="$linea->precio_unitario" /></td>
                         <td class="px-5 py-3 text-right tabular-nums text-ink-soft">{{ $linea->descuento_porcentaje ? number_format((float) $linea->descuento_porcentaje, 2) : '—' }}</td>
-                        <td class="px-5 py-3 text-right tabular-nums text-ink">{{ number_format((float) $linea->importe_linea, 2) }}</td>
+                        <td class="px-5 py-3 text-right tabular-nums text-ink"><x-money :value="$linea->importe_linea" /></td>
                     </tr>
                 @endforeach
 
                 <x-slot name="foot">
                     <tr>
                         <td class="px-5 py-2 text-right text-ink-soft" colspan="4">{{ __('Subtotal') }}</td>
-                        <td class="px-5 py-2 text-right tabular-nums">{{ number_format((float) $venta->subtotal, 2) }}</td>
+                        <td class="px-5 py-2 text-right tabular-nums"><x-money :value="$venta->subtotal" /></td>
                     </tr>
                     <tr>
                         <td class="px-5 py-2 text-right text-ink-soft" colspan="4">{{ __('Descuento') }}</td>
-                        <td class="px-5 py-2 text-right tabular-nums">{{ number_format((float) $venta->descuento_total, 2) }}</td>
+                        <td class="px-5 py-2 text-right tabular-nums"><x-money :value="$venta->descuento_total" /></td>
                     </tr>
                     <tr class="font-semibold text-ink">
                         <td class="px-5 py-2.5 text-right" colspan="4">{{ __('Total') }}</td>
-                        <td class="px-5 py-2.5 text-right tabular-nums">{{ number_format((float) $venta->total, 2) }}</td>
+                        <td class="px-5 py-2.5 text-right tabular-nums"><x-money :value="$venta->total" /></td>
                     </tr>
                 </x-slot>
             </x-table>
@@ -115,12 +115,12 @@
                 <dl class="grid grid-cols-1 gap-x-8 gap-y-3 text-sm sm:grid-cols-2 lg:grid-cols-3">
                     <div class="flex justify-between gap-4 sm:block">
                         <dt class="text-ink-faint">{{ __('Deuda inicial') }}</dt>
-                        <dd class="mt-0.5 tabular-nums text-ink">{{ number_format((float) $venta->credito_monto, 2) }}</dd>
+                        <dd class="mt-0.5 tabular-nums text-ink"><x-money :value="$venta->credito_monto" /></dd>
                     </div>
                     <div class="flex justify-between gap-4 sm:block">
                         <dt class="text-ink-faint">{{ __('Saldo pendiente') }}</dt>
                         <dd class="mt-0.5 font-semibold tabular-nums {{ (float) $venta->credito_saldo_pendiente > 0 ? 'text-warning-700' : 'text-success-700' }}">
-                            {{ number_format((float) $venta->credito_saldo_pendiente, 2) }}
+                            <x-money :value="$venta->credito_saldo_pendiente" />
                             @if ((float) $venta->credito_saldo_pendiente <= 0) · {{ __('saldada') }} @endif
                         </dd>
                     </div>
@@ -147,7 +147,7 @@
                                     <tr>
                                         <td class="py-2 pr-4 text-ink-soft">{{ $abono->fecha->format('Y-m-d') }}</td>
                                         <td class="py-2 pr-4 text-ink-soft">{{ $abono->usuario?->name }}</td>
-                                        <td class="py-2 text-right tabular-nums text-ink">{{ number_format((float) $abono->monto, 2) }}</td>
+                                        <td class="py-2 text-right tabular-nums text-ink"><x-money :value="$abono->monto" /></td>
                                     </tr>
                                 @endforeach
                             </tbody>
@@ -238,7 +238,7 @@
                                 {{ $devolucion->fecha->format('Y-m-d') }} ·
                                 {{ $devolucion->estado->label() }} ·
                                 {{ __('unidades:') }} {{ $devolucion->lineas->sum('cantidad') }} ·
-                                {{ __('saldo generado:') }} {{ number_format((float) $devolucion->saldo_generado, 2) }}
+                                {{ __('saldo generado:') }} <x-money :value="$devolucion->saldo_generado" />
                             </li>
                         @endforeach
                     </ul>

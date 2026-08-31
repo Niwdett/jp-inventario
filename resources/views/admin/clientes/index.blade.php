@@ -31,7 +31,7 @@
                         <td class="px-5 py-3 text-ink-soft" data-label="{{ __('Teléfono') }}">{{ $cliente->telefono ?? '—' }}</td>
                         <td class="px-5 py-3 font-mono text-xs text-ink-soft" data-label="{{ __('Cédula') }}">{{ $cliente->cedula ?? '—' }}</td>
                         <td class="px-5 py-3 text-right tabular-nums {{ (float) $cliente->saldo_favor > 0 ? 'text-success-700' : 'text-ink-soft' }}" data-label="{{ __('Saldo a favor') }}">
-                            {{ number_format((float) $cliente->saldo_favor, 2) }}
+                            <x-money :value="$cliente->saldo_favor" />
                         </td>
                         <td class="px-5 py-3 text-right tabular-nums text-ink-soft" data-label="{{ __('Créditos abiertos') }}">{{ $cliente->ventas_a_credito_count }}</td>
                         <td class="px-5 py-3" data-label="{{ __('Estado') }}">

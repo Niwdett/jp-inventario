@@ -24,7 +24,7 @@
                 <div class="flex justify-between gap-4 sm:block">
                     <dt class="text-ink-faint">{{ __('Saldo a favor') }}</dt>
                     <dd class="mt-0.5 font-semibold tabular-nums {{ (float) $cliente->saldo_favor > 0 ? 'text-success-700' : 'text-ink' }}">
-                        {{ number_format((float) $cliente->saldo_favor, 2) }}
+                        <x-money :value="$cliente->saldo_favor" />
                     </dd>
                 </div>
             </dl>
@@ -44,8 +44,8 @@
                             <a href="{{ route('ventas.show', $venta) }}" class="font-mono text-sm font-medium text-primary-700 hover:text-primary-800">{{ $venta->numero }}</a>
                         </td>
                         <td class="px-5 py-3 text-ink-soft">{{ $venta->fecha_venta->format('Y-m-d') }}</td>
-                        <td class="px-5 py-3 text-right tabular-nums text-ink-soft">{{ number_format((float) $venta->credito_monto, 2) }}</td>
-                        <td class="px-5 py-3 text-right font-semibold tabular-nums text-ink">{{ number_format((float) $venta->credito_saldo_pendiente, 2) }}</td>
+                        <td class="px-5 py-3 text-right tabular-nums text-ink-soft"><x-money :value="$venta->credito_monto" /></td>
+                        <td class="px-5 py-3 text-right font-semibold tabular-nums text-ink"><x-money :value="$venta->credito_saldo_pendiente" /></td>
                     </tr>
                 @empty
                     <x-table-empty :colspan="4" icon="check" tone="positive" :title="__('Sin deudas pendientes')" />
@@ -65,7 +65,7 @@
                         <td class="whitespace-nowrap px-5 py-3 text-ink-soft">{{ $movimiento->created_at?->format('Y-m-d H:i') }}</td>
                         <td class="px-5 py-3 text-ink">{{ $movimiento->tipo->label() }}</td>
                         <td class="px-5 py-3 text-right tabular-nums {{ (float) $movimiento->monto < 0 ? 'text-danger-600' : 'text-success-700' }}">
-                            {{ number_format((float) $movimiento->monto, 2) }}
+                            <x-money :value="$movimiento->monto" />
                         </td>
                     </tr>
                 @empty

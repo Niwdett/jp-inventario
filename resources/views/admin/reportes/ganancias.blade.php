@@ -11,14 +11,14 @@
         @include('admin.reportes._filtros', ['ruta' => 'admin.reportes.ganancias', 'comparable' => true])
 
         <div class="grid grid-cols-2 gap-4 md:grid-cols-4">
-            <x-reportes.tarjeta :titulo="__('Ingreso por ventas')" :valor="number_format((float) $resumen['ingreso'], 2)"
+            <x-reportes.tarjeta :titulo="__('Ingreso por ventas')" :valor="money($resumen['ingreso'])"
                                 :detalle="$resumen['ventas'] . ' ' . __('ventas confirmadas')" />
-            <x-reportes.tarjeta :titulo="__('Ganancia bruta')" :valor="number_format((float) $resumen['ganancia_bruta'], 2)"
+            <x-reportes.tarjeta :titulo="__('Ganancia bruta')" :valor="money($resumen['ganancia_bruta'])"
                                 :tono="$tono($resumen['ganancia_bruta'])" />
             <x-reportes.tarjeta :titulo="__('Ajuste por devoluciones')"
-                                :valor="((float) $resumen['ganancia_revertida'] != 0.0 ? '-' : '') . number_format((float) $resumen['ganancia_revertida'], 2)"
+                                :valor="((float) $resumen['ganancia_revertida'] != 0.0 ? '-' : '') . money($resumen['ganancia_revertida'])"
                                 :detalle="__('devoluciones validadas del periodo')" :tono="(float) $resumen['ganancia_revertida'] > 0 ? 'alerta' : 'neutral'" />
-            <x-reportes.tarjeta :titulo="__('Ganancia neta')" :valor="number_format((float) $resumen['ganancia_neta'], 2)"
+            <x-reportes.tarjeta :titulo="__('Ganancia neta')" :valor="money($resumen['ganancia_neta'])"
                                 :detalle="__('margen') . ' ' . $resumen['margen'] . '%'" :tono="$tono($resumen['ganancia_neta'])" />
         </div>
 
@@ -39,10 +39,10 @@
                         @endphp
                         <tr>
                             <td class="px-5 py-3 text-ink">{{ $texto }}</td>
-                            <td class="px-5 py-3 text-right tabular-nums text-ink-soft">{{ number_format($previo, 2) }}</td>
-                            <td class="px-5 py-3 text-right tabular-nums text-ink">{{ number_format($actual, 2) }}</td>
+                            <td class="px-5 py-3 text-right tabular-nums text-ink-soft"><x-money :value="$previo" /></td>
+                            <td class="px-5 py-3 text-right tabular-nums text-ink"><x-money :value="$actual" /></td>
                             <td class="px-5 py-3 text-right tabular-nums {{ $delta < 0 ? 'text-danger-600' : 'text-success-700' }}">
-                                {{ $delta >= 0 ? '+' : '' }}{{ number_format($delta, 2) }}
+                                {{ $delta >= 0 ? '+' : '' }}<x-money :value="$delta" />
                                 @if ($previo != 0.0)
                                     <span class="text-xs text-ink-faint">({{ number_format($delta / abs($previo) * 100, 1) }}%)</span>
                                 @endif
@@ -71,11 +71,11 @@
                             <span class="ml-1 font-mono text-xs text-ink-faint">{{ $fila->codigo }}</span>
                         </td>
                         <td class="px-5 py-3 text-right tabular-nums text-ink-soft">{{ number_format($fila->unidades) }}</td>
-                        <td class="px-5 py-3 text-right tabular-nums text-ink-soft">{{ number_format((float) $fila->ingreso, 2) }}</td>
-                        <td class="px-5 py-3 text-right tabular-nums text-ink-soft">{{ number_format((float) $fila->ganancia_bruta, 2) }}</td>
+                        <td class="px-5 py-3 text-right tabular-nums text-ink-soft"><x-money :value="$fila->ingreso" /></td>
+                        <td class="px-5 py-3 text-right tabular-nums text-ink-soft"><x-money :value="$fila->ganancia_bruta" /></td>
                         <td class="px-5 py-3 text-right tabular-nums text-ink-soft">{{ $fila->unidades_devueltas ? number_format($fila->unidades_devueltas) : '—' }}</td>
                         <td class="px-5 py-3 text-right font-semibold tabular-nums {{ (float) $fila->ganancia_neta < 0 ? 'text-danger-600' : 'text-ink' }}">
-                            {{ number_format((float) $fila->ganancia_neta, 2) }}
+                            <x-money :value="$fila->ganancia_neta" />
                         </td>
                         <td class="px-5 py-3 text-right tabular-nums text-ink-soft">{{ $fila->margen }}%</td>
                     </tr>
@@ -108,10 +108,10 @@
                         </td>
                         <td class="whitespace-nowrap px-5 py-3 text-ink-soft">{{ \Illuminate\Support\Carbon::parse($fila->fecha_venta)->format('Y-m-d') }}</td>
                         <td class="px-5 py-3 text-ink">{{ $fila->cliente ?? '—' }}</td>
-                        <td class="px-5 py-3 text-right tabular-nums text-ink-soft">{{ number_format((float) $fila->ingreso, 2) }}</td>
-                        <td class="px-5 py-3 text-right tabular-nums text-ink-soft">{{ number_format((float) $fila->costo, 2) }}</td>
+                        <td class="px-5 py-3 text-right tabular-nums text-ink-soft"><x-money :value="$fila->ingreso" /></td>
+                        <td class="px-5 py-3 text-right tabular-nums text-ink-soft"><x-money :value="$fila->costo" /></td>
                         <td class="px-5 py-3 text-right font-semibold tabular-nums {{ (float) $fila->ganancia < 0 ? 'text-danger-600' : 'text-ink' }}">
-                            {{ number_format((float) $fila->ganancia, 2) }}
+                            <x-money :value="$fila->ganancia" />
                         </td>
                     </tr>
                 @empty

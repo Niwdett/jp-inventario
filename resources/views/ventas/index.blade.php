@@ -49,7 +49,7 @@
                         <td class="px-5 py-3 text-ink" data-label="{{ __('Cliente') }}">{{ $venta->cliente?->nombre ?? '—' }}</td>
                         <td class="px-5 py-3 text-ink-soft" data-label="{{ __('Vendedor') }}">{{ $venta->usuario->name }}</td>
                         <td class="px-5 py-3 text-ink-soft" data-label="{{ __('Método') }}">{{ $venta->metodo_pago->label() }}</td>
-                        <td class="px-5 py-3 text-right tabular-nums text-ink" data-label="{{ __('Total') }}">{{ number_format((float) $venta->total, 2) }}</td>
+                        <td class="px-5 py-3 text-right tabular-nums text-ink" data-label="{{ __('Total') }}"><x-money :value="$venta->total" /></td>
                         <td class="px-5 py-3" data-label="{{ __('Estado') }}">
                             @if ($venta->estado === \App\Enums\EstadoVenta::Anulada)
                                 <x-badge variant="danger">{{ __('Anulada') }}</x-badge>

@@ -8,9 +8,9 @@
 
         <div class="grid grid-cols-2 gap-4 md:grid-cols-4">
             <x-reportes.tarjeta :titulo="__('Ventas')" :valor="number_format($resumen->ventas)" />
-            <x-reportes.tarjeta :titulo="__('Subtotal')" :valor="number_format((float) $resumen->subtotal, 2)" />
-            <x-reportes.tarjeta :titulo="__('Descuentos')" :valor="number_format((float) $resumen->descuento, 2)" />
-            <x-reportes.tarjeta :titulo="__('Total cobrado')" :valor="number_format((float) $resumen->total, 2)" />
+            <x-reportes.tarjeta :titulo="__('Subtotal')" :valor="money($resumen->subtotal)" />
+            <x-reportes.tarjeta :titulo="__('Descuentos')" :valor="money($resumen->descuento)" />
+            <x-reportes.tarjeta :titulo="__('Total cobrado')" :valor="money($resumen->total)" />
         </div>
 
         <div class="grid gap-6 md:grid-cols-2">
@@ -25,7 +25,7 @@
                         <tr>
                             <td class="px-5 py-3 text-ink">{{ $fila->metodo_pago->label() }}</td>
                             <td class="px-5 py-3 text-right tabular-nums text-ink-soft">{{ number_format($fila->ventas) }}</td>
-                            <td class="px-5 py-3 text-right tabular-nums text-ink">{{ number_format((float) $fila->total, 2) }}</td>
+                            <td class="px-5 py-3 text-right tabular-nums text-ink"><x-money :value="$fila->total" /></td>
                         </tr>
                     @empty
                         <x-table-empty :colspan="3" icon="calendario" :title="__('Sin ventas en el periodo seleccionado')" />
@@ -37,7 +37,7 @@
                 <p class="text-sm text-ink-soft">
                     {{ trans_choice('{0}Ninguna devolución validada.|{1}:count devolución validada|[2,*]:count devoluciones validadas', $devoluciones->total, ['count' => $devoluciones->total]) }}
                     @if ($devoluciones->total > 0)
-                        — {{ __('saldo a favor generado:') }} <span class="font-medium text-ink">{{ number_format((float) $devoluciones->saldo_generado, 2) }}</span>
+                        — {{ __('saldo a favor generado:') }} <span class="font-medium text-ink"><x-money :value="$devoluciones->saldo_generado" /></span>
                     @endif
                 </p>
                 <p class="mt-2 text-xs text-ink-faint">{{ __('Su efecto en la utilidad se refleja en el reporte de Ganancias.') }}</p>
@@ -55,7 +55,7 @@
                     <tr class="transition-colors hover:bg-surface-sunken/60">
                         <td class="px-5 py-3 text-ink">{{ $fila->dia }}</td>
                         <td class="px-5 py-3 text-right tabular-nums text-ink-soft">{{ number_format($fila->ventas) }}</td>
-                        <td class="px-5 py-3 text-right tabular-nums text-ink">{{ number_format((float) $fila->total, 2) }}</td>
+                        <td class="px-5 py-3 text-right tabular-nums text-ink"><x-money :value="$fila->total" /></td>
                     </tr>
                 @empty
                     <x-table-empty :colspan="3" icon="calendario" :title="__('Sin ventas en el periodo seleccionado')">

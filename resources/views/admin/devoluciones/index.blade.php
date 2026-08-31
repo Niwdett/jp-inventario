@@ -26,7 +26,7 @@
                                 <x-badge>{{ __('Rechazada') }}</x-badge>
                             @endif
                         </td>
-                        <td class="px-5 py-3 text-right tabular-nums text-ink">{{ number_format((float) $devolucion->saldo_generado, 2) }}</td>
+                        <td class="px-5 py-3 text-right tabular-nums text-ink"><x-money :value="$devolucion->saldo_generado" /></td>
                         <td class="px-5 py-3 text-ink-soft">{{ $devolucion->usuario?->name }}</td>
                     </tr>
                 @empty

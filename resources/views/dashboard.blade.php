@@ -8,7 +8,7 @@
         @isset ($empleado)
             <div class="grid gap-4 sm:grid-cols-2">
                 <x-stat :label="__('Mis ventas de hoy')" :value="number_format($empleado['ventas_hoy'])" icon="ventas" />
-                <x-stat :label="__('Total vendido hoy')" :value="'$ '.number_format((float) $empleado['total_hoy'], 2)" icon="saldo-favor" />
+                <x-stat :label="__('Total vendido hoy')" :value="money($empleado['total_hoy'], 2, true)" icon="saldo-favor" />
             </div>
 
             <x-card>
@@ -34,10 +34,10 @@
             <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 <a href="{{ route('admin.reportes.ventas', ['preset' => 'hoy']) }}" class="block transition hover:-translate-y-0.5">
                     <x-stat :label="__('Ventas de hoy')" :value="number_format($admin['ventas_hoy'])"
-                            :hint="'$ '.number_format((float) $admin['total_hoy'], 2)" icon="ventas" />
+                            :hint="money($admin['total_hoy'], 2, true)" icon="ventas" />
                 </a>
                 <a href="{{ route('admin.reportes.ganancias', ['preset' => 'mes']) }}" class="block transition hover:-translate-y-0.5">
-                    <x-stat :label="__('Ganancia bruta (mes)')" :value="'$ '.number_format((float) $admin['ganancia_mes'], 2)"
+                    <x-stat :label="__('Ganancia bruta (mes)')" :value="money($admin['ganancia_mes'], 2, true)"
                             icon="reportes" :tone="(float) $admin['ganancia_mes'] < 0 ? 'negative' : 'positive'" />
                 </a>
                 <a href="{{ route('admin.inventario.alertas.index') }}" class="block transition hover:-translate-y-0.5">
@@ -58,16 +58,16 @@
                             <dd class="text-right font-medium tabular-nums text-ink">
                                 {{ number_format($admin['ventas_mes']) }}
                                 <span class="text-ink-faint">·</span>
-                                $ {{ number_format((float) $admin['total_mes'], 2) }}
+                                <x-money :value="$admin['total_mes']" symbol />
                             </dd>
                         </div>
                         <div class="flex items-center justify-between gap-4 py-2.5">
                             <dt class="text-ink-soft">{{ __('Crédito por cobrar') }}</dt>
-                            <dd class="font-medium tabular-nums text-ink">$ {{ number_format((float) $admin['credito_por_cobrar'], 2) }}</dd>
+                            <dd class="font-medium tabular-nums text-ink"><x-money :value="$admin['credito_por_cobrar']" symbol /></dd>
                         </div>
                         <div class="flex items-center justify-between gap-4 py-2.5">
                             <dt class="text-ink-soft">{{ __('Saldo a favor de clientes') }}</dt>
-                            <dd class="font-medium tabular-nums text-ink">$ {{ number_format((float) $admin['saldo_favor_clientes'], 2) }}</dd>
+                            <dd class="font-medium tabular-nums text-ink"><x-money :value="$admin['saldo_favor_clientes']" symbol /></dd>
                         </div>
                     </dl>
                 </x-card>
@@ -86,7 +86,7 @@
                                     <span class="ml-1.5 font-mono text-xs text-ink-faint">{{ $fila->codigo_interno }}</span>
                                 </td>
                                 <td class="px-5 py-3 text-right tabular-nums text-ink-soft">{{ number_format($fila->unidades) }}</td>
-                                <td class="px-5 py-3 text-right tabular-nums text-ink-soft">$ {{ number_format((float) $fila->ingreso, 2) }}</td>
+                                <td class="px-5 py-3 text-right tabular-nums text-ink-soft"><x-money :value="$fila->ingreso" symbol /></td>
                             </tr>
                         @empty
                             <x-table-empty :colspan="3" icon="ventas" :title="__('Aún no hay ventas este mes')">

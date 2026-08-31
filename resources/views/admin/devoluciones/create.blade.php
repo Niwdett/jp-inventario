@@ -36,7 +36,7 @@
                                     <span class="mt-0.5 block text-xs text-ink-faint">
                                         {{ __('Vendidas:') }} {{ $linea->cantidad }} ·
                                         {{ __('ya devueltas:') }} {{ $devuelta }} ·
-                                        {{ __('pagó/unidad:') }} {{ number_format((float) $linea->valorUnitarioPagado(), 2) }}
+                                        {{ __('pagó/unidad:') }} <x-money :value="$linea->valorUnitarioPagado()" />
                                     </span>
                                 </span>
                             </label>

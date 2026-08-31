@@ -8,7 +8,7 @@
         <div class="flex flex-wrap items-start justify-between gap-4">
             <div class="grid grid-cols-2 gap-4">
                 <x-reportes.tarjeta :titulo="__('Unidades en stock')" :valor="number_format($unidadesTotal)" />
-                <x-reportes.tarjeta :titulo="__('Valor del inventario')" :valor="number_format((float) $valorTotal, 2)"
+                <x-reportes.tarjeta :titulo="__('Valor del inventario')" :valor="money($valorTotal)"
                                     :detalle="__('stock × costo promedio')" />
             </div>
             <form method="GET" action="{{ route('admin.reportes.inventario') }}" class="print:hidden">
@@ -31,7 +31,7 @@
                     <tr>
                         <td class="px-5 py-3 text-ink">{{ $categoria }}</td>
                         <td class="px-5 py-3 text-right tabular-nums text-ink-soft">{{ number_format($totales['unidades']) }}</td>
-                        <td class="px-5 py-3 text-right tabular-nums text-ink">{{ number_format((float) $totales['valor'], 2) }}</td>
+                        <td class="px-5 py-3 text-right tabular-nums text-ink"><x-money :value="$totales['valor']" /></td>
                     </tr>
                 @empty
                     <x-table-empty :colspan="3" icon="inventario" :title="__('Sin stock disponible')">
@@ -63,8 +63,8 @@
                             @endif
                         </td>
                         <td class="px-5 py-3 text-right tabular-nums">{{ number_format($variante->stock) }}</td>
-                        <td class="px-5 py-3 text-right tabular-nums text-ink-soft">{{ number_format((float) $variante->costo_promedio, 4) }}</td>
-                        <td class="px-5 py-3 text-right tabular-nums text-ink">{{ number_format((float) $variante->valor_inventario, 2) }}</td>
+                        <td class="px-5 py-3 text-right tabular-nums text-ink-soft"><x-money :value="$variante->costo_promedio" :decimals="4" /></td>
+                        <td class="px-5 py-3 text-right tabular-nums text-ink"><x-money :value="$variante->valor_inventario" /></td>
                     </tr>
                 @empty
                     <x-table-empty :colspan="5" icon="inventario" :title="__('Sin stock disponible')">
@@ -80,7 +80,7 @@
                             <td class="px-5 py-3" colspan="2">{{ __('Total') }}</td>
                             <td class="px-5 py-3 text-right tabular-nums">{{ number_format($unidadesTotal) }}</td>
                             <td class="px-5 py-3"></td>
-                            <td class="px-5 py-3 text-right tabular-nums">{{ number_format((float) $valorTotal, 2) }}</td>
+                            <td class="px-5 py-3 text-right tabular-nums"><x-money :value="$valorTotal" /></td>
                         </tr>
                     </x-slot>
                 @endif
