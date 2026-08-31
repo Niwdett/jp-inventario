@@ -7,6 +7,7 @@ use App\Models\Variante;
 use App\Models\Venta;
 use App\Models\VentaLinea;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 
 beforeEach(function () {
     $this->admin = User::factory()->administrador()->create();
@@ -72,6 +73,17 @@ test('busca una venta por su número', function () {
         ->assertOk()
         ->assertSee('V-000042')
         ->assertDontSee('V-000099');
+});
+
+test('encuentra la venta aunque se escriba el número sin ceros', function () {
+    ventaListado('V-000007', '2026-08-10 10:00');
+    ventaListado('V-000070', '2026-08-10 10:00');
+
+    $this->actingAs($this->admin)
+        ->get(route('ventas.index', ['buscar' => 'V-7']))
+        ->assertOk()
+        ->assertSee('V-000007')
+        ->assertDontSee('V-000070');
 });
 
 test('busca ventas por el nombre del cliente', function () {
@@ -154,6 +166,37 @@ test('el listado muestra un resumen de los productos vendidos', function () {
         ->assertOk()
         ->assertSee('Camiseta básica ×2')
         ->assertSee('Jean clásico ×1');
+});
+
+test('el listado no incurre en N+1 al mostrar los productos de cada venta', function () {
+    $crearVentas = fn (int $n) => Venta::factory()->count($n)
+        ->create(['fecha_venta' => now()])
+        ->each(fn (Venta $v) => VentaLinea::factory()->count(2)->for($v)->create());
+
+    $crearVentas(2);
+    DB::enableQueryLog();
+    $this->actingAs($this->admin)->get(route('ventas.index'))->assertOk();
+    $conPocas = count(DB::getQueryLog());
+
+    $crearVentas(8);
+    DB::flushQueryLog();
+    $this->actingAs($this->admin)->get(route('ventas.index'))->assertOk();
+    $conMuchas = count(DB::getQueryLog());
+
+    DB::disableQueryLog();
+
+    expect($conMuchas)->toBe($conPocas);
+});
+
+test('el acceso rápido "Hoy" filtra las ventas del día', function () {
+    ventaListado('V-000001', now()->toDateString().' 09:00');
+    ventaListado('V-000002', now()->subWeek()->toDateString().' 09:00');
+
+    $this->actingAs($this->admin)
+        ->get(route('ventas.index', ['desde' => now()->toDateString(), 'hasta' => now()->toDateString()]))
+        ->assertOk()
+        ->assertSee('V-000001')
+        ->assertDontSee('V-000002');
 });
 
 test('resumenProductos corta la lista cuando hay muchas líneas', function () {

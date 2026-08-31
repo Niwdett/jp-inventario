@@ -45,6 +45,10 @@ class VentaController extends Controller
         ]);
 
         $buscar = trim($filtros['buscar'] ?? '');
+        // Solo los dígitos, para que "1", "V-1" o "000001" encuentren la venta "V-000001".
+        $numeroCanonico = ($digitos = preg_replace('/\D/', '', $buscar)) !== ''
+            ? sprintf('V-%06d', (int) $digitos)
+            : null;
 
         $ventas = Venta::with(['cliente', 'usuario', 'lineas.variante.producto'])
             ->when(
@@ -65,8 +69,9 @@ class VentaController extends Controller
             )
             ->when(
                 $buscar !== '',
-                fn (Builder $query) => $query->where(function (Builder $query) use ($buscar) {
+                fn (Builder $query) => $query->where(function (Builder $query) use ($buscar, $numeroCanonico) {
                     $query->where('numero', 'like', "%{$buscar}%")
+                        ->when($numeroCanonico, fn (Builder $query) => $query->orWhere('numero', $numeroCanonico))
                         ->orWhereHas('cliente', fn (Builder $cliente) => $cliente->where('nombre', 'like', "%{$buscar}%"));
                 }),
             )

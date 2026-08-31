@@ -9,6 +9,16 @@
     // Parámetros de búsqueda que deben viajar con los chips de estado y la paginación.
     $paramsBusqueda = array_filter(request()->only(['buscar', 'desde', 'hasta']), fn ($v) => $v !== null && $v !== '');
     $hayBusqueda = $paramsBusqueda !== [];
+
+    // Accesos rápidos de rango de fechas.
+    $hoy = \Illuminate\Support\Carbon::today();
+    $presetsRango = [
+        __('Hoy') => ['desde' => $hoy->toDateString(), 'hasta' => $hoy->toDateString()],
+        __('Ayer') => ['desde' => $hoy->copy()->subDay()->toDateString(), 'hasta' => $hoy->copy()->subDay()->toDateString()],
+        __('Esta semana') => ['desde' => $hoy->copy()->startOfWeek()->toDateString(), 'hasta' => $hoy->copy()->endOfWeek()->toDateString()],
+        __('Este mes') => ['desde' => $hoy->copy()->startOfMonth()->toDateString(), 'hasta' => $hoy->copy()->endOfMonth()->toDateString()],
+    ];
+    $paramsBase = array_filter(request()->only(['buscar', 'estado']), fn ($v) => $v !== null && $v !== '');
 @endphp
 
 <x-app-layout>
@@ -64,6 +74,19 @@
                 <x-input-error :messages="$errors->get('desde')" class="w-full" />
                 <x-input-error :messages="$errors->get('hasta')" class="w-full" />
             </form>
+
+            <div class="mt-3 flex flex-wrap items-center gap-1.5 border-t border-line pt-3">
+                <span class="mr-0.5 text-xs text-ink-faint">{{ __('Rápido:') }}</span>
+                @foreach ($presetsRango as $etiqueta => $rango)
+                    @php($activo = request('desde') === $rango['desde'] && request('hasta') === $rango['hasta'])
+                    <a href="{{ route('ventas.index', array_merge($paramsBase, $rango)) }}"
+                       @class([
+                           'inline-flex items-center rounded-lg border px-2.5 py-1 text-xs font-medium transition-colors',
+                           'border-primary-600 bg-primary-600 text-white' => $activo,
+                           'border-line bg-surface text-ink-soft hover:bg-surface-sunken' => ! $activo,
+                       ])>{{ $etiqueta }}</a>
+                @endforeach
+            </div>
         </x-card>
 
         <x-card flush>
