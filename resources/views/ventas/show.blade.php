@@ -158,6 +158,7 @@
                 @can('abonar', $venta)
                     <form method="POST" action="{{ route('admin.creditos.abonos.store', $venta) }}" class="mt-4 flex flex-wrap items-end gap-3 border-t border-line pt-4 print:hidden">
                         @csrf
+                        <input type="hidden" name="idempotency_key" value="{{ \Illuminate\Support\Str::uuid() }}">
                         <div>
                             <x-input-label for="monto" :value="__('Monto del abono')" />
                             <x-text-input id="monto" name="monto" type="number" step="0.01" min="0.01"

@@ -15,6 +15,7 @@ use App\Models\Variante;
 use App\Models\Venta;
 use App\Services\Clientes\MovimientoSaldoFavor;
 use App\Services\Inventario\MovimientoStock;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -47,6 +48,11 @@ class RegistrarVenta
     /**
      * @param  list<array{variante_id: int, cantidad: int, precio_unitario: string, descuento_porcentaje: string|null}>  $lineas
      *
+     * Si se pasa `$idempotencyKey` y ya existe una venta con esa clave, se
+     * devuelve esa venta sin crear otra (protege contra el doble envío del
+     * formulario). El índice UNIQUE de `ventas.idempotency_key` cubre además el
+     * caso de dos peticiones simultáneas.
+     *
      * @throws StockInsuficienteException
      * @throws SaldoFavorInsuficienteException
      * @throws ClienteEnMoraException
@@ -59,8 +65,36 @@ class RegistrarVenta
         User $usuario,
         string $saldoFavorAplicado = '0',
         bool $autorizarMora = false,
+        ?string $idempotencyKey = null,
     ): Venta {
-        return DB::transaction(function () use ($lineas, $metodoPago, $cliente, $usuario, $saldoFavorAplicado, $autorizarMora) {
+        if ($idempotencyKey !== null && $previa = Venta::where('idempotency_key', $idempotencyKey)->first()) {
+            return $previa->load('lineas');
+        }
+
+        try {
+            return $this->registrar($lineas, $metodoPago, $cliente, $usuario, $saldoFavorAplicado, $autorizarMora, $idempotencyKey);
+        } catch (UniqueConstraintViolationException $e) {
+            if ($idempotencyKey !== null) {
+                return Venta::where('idempotency_key', $idempotencyKey)->firstOrFail()->load('lineas');
+            }
+
+            throw $e;
+        }
+    }
+
+    /**
+     * @param  list<array{variante_id: int, cantidad: int, precio_unitario: string, descuento_porcentaje: string|null}>  $lineas
+     */
+    private function registrar(
+        array $lineas,
+        MetodoPago $metodoPago,
+        ?Cliente $cliente,
+        User $usuario,
+        string $saldoFavorAplicado,
+        bool $autorizarMora,
+        ?string $idempotencyKey,
+    ): Venta {
+        return DB::transaction(function () use ($lineas, $metodoPago, $cliente, $usuario, $saldoFavorAplicado, $autorizarMora, $idempotencyKey) {
             $ids = collect($lineas)->pluck('variante_id')->unique()->sort()->values();
 
             /** @var Collection<int, Variante> $variantes */
@@ -106,6 +140,7 @@ class RegistrarVenta
 
             $venta = new Venta;
             $venta->numero = Venta::generarNumero();
+            $venta->idempotency_key = $idempotencyKey;
             $venta->cliente_id = $clienteBloqueado?->id;
             $venta->usuario_id = $usuario->id;
             $venta->fecha_venta = now();

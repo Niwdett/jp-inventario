@@ -55,6 +55,7 @@
                       get clienteEnMora() { return this.cliente_id && this.clientesEnMora.map(String).includes(String(this.cliente_id)); },
                   }">
                 @csrf
+                <input type="hidden" name="idempotency_key" value="{{ \Illuminate\Support\Str::uuid() }}">
 
                 <div class="space-y-3">
                     <template x-for="(linea, i) in lineas" :key="i">
