@@ -55,7 +55,7 @@
                         <td class="px-5 py-3 text-right font-semibold tabular-nums text-ink">{{ number_format((float) $venta->credito_saldo_pendiente, 2) }}</td>
                     </tr>
                 @empty
-                    <tr><td colspan="4" class="px-5 py-10 text-center text-sm text-ink-faint">{{ __('Sin deudas pendientes.') }}</td></tr>
+                    <x-table-empty :colspan="4" icon="check" tone="positive" :title="__('Sin deudas pendientes')" />
                 @endforelse
             </x-table>
         </x-card>
@@ -76,7 +76,7 @@
                         </td>
                     </tr>
                 @empty
-                    <tr><td colspan="3" class="px-5 py-10 text-center text-sm text-ink-faint">{{ __('Sin movimientos de saldo a favor.') }}</td></tr>
+                    <x-table-empty :colspan="3" icon="saldo-favor" :title="__('Sin movimientos de saldo a favor')" />
                 @endforelse
             </x-table>
         </x-card>

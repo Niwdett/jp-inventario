@@ -77,7 +77,9 @@
                         <td class="px-5 py-3 text-right tabular-nums text-ink-soft">{{ $fila->margen }}%</td>
                     </tr>
                 @empty
-                    <tr><td colspan="7" class="px-5 py-10 text-center text-sm text-ink-faint">{{ __('Sin ventas en el periodo.') }}</td></tr>
+                    <x-table-empty :colspan="7" icon="calendario" :title="__('Sin ventas en el periodo seleccionado')">
+                        {{ __('Prueba con otro rango de fechas en el filtro de arriba.') }}
+                    </x-table-empty>
                 @endforelse
             </x-table>
         </x-card>
@@ -110,7 +112,7 @@
                         </td>
                     </tr>
                 @empty
-                    <tr><td colspan="6" class="px-5 py-10 text-center text-sm text-ink-faint">{{ __('Sin ventas en el periodo.') }}</td></tr>
+                    <x-table-empty :colspan="6" icon="calendario" :title="__('Sin ventas en el periodo seleccionado')" />
                 @endforelse
             </x-table>
         </x-card>

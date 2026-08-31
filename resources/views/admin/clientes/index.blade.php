@@ -75,11 +75,15 @@
                         </td>
                     </tr>
                 @empty
-                    <tr>
-                        <td colspan="7" class="px-5 py-12 text-center text-sm text-ink-faint">
-                            {{ __('Aún no hay clientes. Crea el primero para poder venderle a crédito o registrar su saldo a favor.') }}
-                        </td>
-                    </tr>
+                    <x-table-empty :colspan="7" icon="clientes" :title="__('Aún no hay clientes')">
+                        {{ __('Crea el primero para poder venderle a crédito o registrar su saldo a favor.') }}
+                        <x-slot:actions>
+                            <x-button size="sm" :href="route('admin.clientes.create')">
+                                <x-icon name="mas" class="size-4" />
+                                {{ __('Nuevo cliente') }}
+                            </x-button>
+                        </x-slot:actions>
+                    </x-table-empty>
                 @endforelse
             </x-table>
         </x-card>

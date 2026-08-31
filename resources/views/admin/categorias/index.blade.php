@@ -55,11 +55,15 @@
                         </td>
                     </tr>
                 @empty
-                    <tr>
-                        <td colspan="5" class="px-5 py-12 text-center text-sm text-ink-faint">
-                            {{ __('Aún no hay categorías. Crea la primera para poder registrar productos.') }}
-                        </td>
-                    </tr>
+                    <x-table-empty :colspan="5" icon="categorias" :title="__('Aún no hay categorías')">
+                        {{ __('Crea la primera categoría para poder registrar productos.') }}
+                        <x-slot:actions>
+                            <x-button size="sm" :href="route('admin.categorias.create')">
+                                <x-icon name="mas" class="size-4" />
+                                {{ __('Nueva categoría') }}
+                            </x-button>
+                        </x-slot:actions>
+                    </x-table-empty>
                 @endforelse
             </x-table>
         </x-card>

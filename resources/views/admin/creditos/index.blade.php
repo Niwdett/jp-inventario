@@ -43,9 +43,9 @@
                         </td>
                     </tr>
                 @empty
-                    <tr>
-                        <td colspan="6" class="px-5 py-12 text-center text-sm text-ink-faint">{{ __('No hay créditos pendientes de cobro.') }}</td>
-                    </tr>
+                    <x-table-empty :colspan="6" icon="check" tone="positive" :title="__('No hay créditos pendientes de cobro')">
+                        {{ __('Todas las ventas a crédito están saldadas.') }}
+                    </x-table-empty>
                 @endforelse
             </x-table>
         </x-card>

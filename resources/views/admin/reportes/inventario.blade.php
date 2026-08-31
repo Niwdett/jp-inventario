@@ -31,7 +31,9 @@
                         <td class="px-5 py-3 text-right tabular-nums text-ink">{{ number_format((float) $totales['valor'], 2) }}</td>
                     </tr>
                 @empty
-                    <tr><td colspan="3" class="px-5 py-10 text-center text-sm text-ink-faint">{{ __('Sin stock disponible.') }}</td></tr>
+                    <x-table-empty :colspan="3" icon="inventario" :title="__('Sin stock disponible')">
+                        {{ __('Registra entradas de mercancía para ver el inventario valorizado.') }}
+                    </x-table-empty>
                 @endforelse
             </x-table>
         </x-card>
@@ -62,7 +64,11 @@
                         <td class="px-5 py-3 text-right tabular-nums text-ink">{{ number_format((float) $variante->valor_inventario, 2) }}</td>
                     </tr>
                 @empty
-                    <tr><td colspan="5" class="px-5 py-10 text-center text-sm text-ink-faint">{{ __('Sin stock disponible.') }}</td></tr>
+                    <x-table-empty :colspan="5" icon="inventario" :title="__('Sin stock disponible')">
+                        @if (! $incluirAgotadas)
+                            {{ __('Marca «Incluir variantes agotadas» para ver también las que están en cero.') }}
+                        @endif
+                    </x-table-empty>
                 @endforelse
 
                 @if ($variantes->isNotEmpty())

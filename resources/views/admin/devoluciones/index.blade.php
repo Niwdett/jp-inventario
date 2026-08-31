@@ -34,9 +34,9 @@
                         <td class="px-5 py-3 text-ink-soft">{{ $devolucion->usuario?->name }}</td>
                     </tr>
                 @empty
-                    <tr>
-                        <td colspan="6" class="px-5 py-12 text-center text-sm text-ink-faint">{{ __('Aún no se han registrado devoluciones.') }}</td>
-                    </tr>
+                    <x-table-empty :colspan="6" icon="devoluciones" :title="__('Aún no se han registrado devoluciones')">
+                        {{ __('Las devoluciones se inician desde el detalle de una venta entregada.') }}
+                    </x-table-empty>
                 @endforelse
             </x-table>
         </x-card>

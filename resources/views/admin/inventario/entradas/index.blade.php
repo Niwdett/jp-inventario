@@ -75,7 +75,15 @@
                         </tr>
                     @endif
                 @empty
-                    <tr><td colspan="7" class="px-5 py-12 text-center text-sm text-ink-faint">{{ __('Aún no hay entradas registradas.') }}</td></tr>
+                    <x-table-empty :colspan="7" icon="entrada" :title="__('Aún no hay entradas registradas')">
+                        {{ __('Registra la compra de mercancía para sumar stock y calcular el costo promedio.') }}
+                        <x-slot:actions>
+                            <x-button size="sm" :href="route('admin.inventario.entradas.create')">
+                                <x-icon name="mas" class="size-4" />
+                                {{ __('Registrar entrada') }}
+                            </x-button>
+                        </x-slot:actions>
+                    </x-table-empty>
                 @endforelse
             </x-table>
         </x-card>

@@ -69,9 +69,15 @@
                         </td>
                     </tr>
                 @empty
-                    <tr>
-                        <td colspan="6" class="px-5 py-12 text-center text-sm text-ink-faint">{{ __('Aún no hay productos.') }}</td>
-                    </tr>
+                    <x-table-empty :colspan="6" icon="productos" :title="__('Aún no hay productos')">
+                        {{ __('Registra el primer producto y sus variantes para empezar a controlar el stock.') }}
+                        <x-slot:actions>
+                            <x-button size="sm" :href="route('admin.productos.create')">
+                                <x-icon name="mas" class="size-4" />
+                                {{ __('Nuevo producto') }}
+                            </x-button>
+                        </x-slot:actions>
+                    </x-table-empty>
                 @endforelse
             </x-table>
         </x-card>

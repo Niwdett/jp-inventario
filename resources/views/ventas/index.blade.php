@@ -68,7 +68,24 @@
                         </td>
                     </tr>
                 @empty
-                    <tr><td colspan="7" class="px-5 py-12 text-center text-sm text-ink-faint">{{ __('Aún no hay ventas registradas.') }}</td></tr>
+                    @if ($estadoActual)
+                        <x-table-empty :colspan="7" icon="buscar"
+                                       :title="__('No hay ventas :estado', ['estado' => \Illuminate\Support\Str::lower($filtros[$estadoActual] ?? '')])">
+                            <x-slot:actions>
+                                <x-button variant="secondary" size="sm" :href="route('ventas.index')">{{ __('Ver todas') }}</x-button>
+                            </x-slot:actions>
+                        </x-table-empty>
+                    @else
+                        <x-table-empty :colspan="7" icon="ventas" :title="__('Aún no hay ventas registradas')">
+                            {{ __('Registra la primera venta para llevar el control de tu inventario y tus ingresos.') }}
+                            <x-slot:actions>
+                                <x-button size="sm" :href="route('ventas.create')">
+                                    <x-icon name="mas" class="size-4" />
+                                    {{ __('Registrar venta') }}
+                                </x-button>
+                            </x-slot:actions>
+                        </x-table-empty>
+                    @endif
                 @endforelse
             </x-table>
         </x-card>

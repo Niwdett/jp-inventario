@@ -89,9 +89,9 @@
                                 <td class="px-5 py-3 text-right tabular-nums text-ink-soft">$ {{ number_format((float) $fila->ingreso, 2) }}</td>
                             </tr>
                         @empty
-                            <tr>
-                                <td colspan="3" class="px-5 py-10 text-center text-sm text-ink-faint">{{ __('Aún no hay ventas este mes.') }}</td>
-                            </tr>
+                            <x-table-empty :colspan="3" icon="ventas" :title="__('Aún no hay ventas este mes')">
+                                {{ __('Cuando registres ventas verás aquí los productos que más se mueven.') }}
+                            </x-table-empty>
                         @endforelse
                     </x-table>
                 </x-card>
