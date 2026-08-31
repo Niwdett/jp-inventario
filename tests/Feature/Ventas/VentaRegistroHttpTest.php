@@ -42,6 +42,26 @@ test('un empleado puede registrar una venta y queda asociada a él', function ()
         ->and($this->variante->refresh()->stock)->toBe(8);
 });
 
+test('el formulario de venta expone el precio de referencia de cada variante', function () {
+    $this->producto->update(['precio_referencia' => '45000.00']);
+
+    $this->actingAs(User::factory()->empleado()->create())
+        ->get(route('ventas.create'))
+        ->assertOk()
+        ->assertViewHas('preciosReferencia', fn ($precios) => (string) $precios[$this->variante->id] === '45000.00');
+});
+
+test('el precio de referencia es solo sugerido: la venta conserva el precio real usado', function () {
+    $this->producto->update(['precio_referencia' => '45000.00']);
+    $empleado = User::factory()->empleado()->create();
+
+    $this->actingAs($empleado)->post(route('ventas.store'), payloadVenta(['lineas' => [
+        ['variante_id' => $this->variante->id, 'cantidad' => 1, 'precio_unitario' => '40000.00'],
+    ]]));
+
+    expect((float) Venta::sole()->lineas->first()->precio_unitario)->toBe(40000.0);
+});
+
 test('un administrador también puede registrar ventas', function () {
     $admin = User::factory()->administrador()->create();
 

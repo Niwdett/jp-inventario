@@ -78,3 +78,22 @@ test('un rango personalizado sin fechas es invalido', function () {
         ->get(route('admin.reportes.ventas', ['preset' => 'personalizado']))
         ->assertSessionHasErrors(['desde', 'hasta']);
 });
+
+test('el detalle por día trae la lista de ventas de cada día', function () {
+    $a = s5Venta('2026-03-10', 100);
+    $b = s5Venta('2026-03-10', 40);
+    $c = s5Venta('2026-03-11', 30);
+
+    $this->actingAs($this->admin)
+        ->get(route('admin.reportes.ventas', ['preset' => 'personalizado', 'desde' => '2026-03-01', 'hasta' => '2026-03-31']))
+        ->assertOk()
+        ->assertViewHas('porDia', function ($porDia) use ($a, $b) {
+            $dia = $porDia->firstWhere('dia', '2026-03-10');
+
+            return $dia['ventas'] === 2
+                && (float) $dia['total'] === 140.0
+                && $dia['detalle']->pluck('id')->all() === [$a->id, $b->id];
+        })
+        ->assertSee($a->numero)
+        ->assertSee($c->numero);
+});

@@ -10,7 +10,9 @@ use App\Models\EntradaInventario;
 use App\Models\Variante;
 use App\Services\Inventario\AnularEntrada;
 use App\Services\Inventario\RegistrarEntrada;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 /**
@@ -22,14 +24,24 @@ use Illuminate\View\View;
  */
 class EntradaInventarioController extends Controller
 {
-    public function index(): View
+    public function index(Request $request): View
     {
+        $request->validate(['buscar' => ['nullable', 'string', 'max:100']]);
+        $buscar = trim((string) $request->query('buscar'));
+
         $entradas = EntradaInventario::with(['variante.producto', 'usuario', 'anuladaPor'])
+            ->when($buscar !== '', fn (Builder $query) => $query->whereHas(
+                'variante.producto',
+                fn (Builder $producto) => $producto
+                    ->where('nombre', 'like', "%{$buscar}%")
+                    ->orWhere('codigo_interno', 'like', "%{$buscar}%"),
+            ))
             ->latest('fecha')
             ->latest('id')
-            ->paginate(20);
+            ->paginate(20)
+            ->withQueryString();
 
-        return view('admin.inventario.entradas.index', compact('entradas'));
+        return view('admin.inventario.entradas.index', compact('entradas', 'buscar'));
     }
 
     public function create(): View

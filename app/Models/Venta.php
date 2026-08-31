@@ -166,6 +166,25 @@ class Venta extends Model
     }
 
     /**
+     * Resumen legible de los productos vendidos, para el listado de ventas:
+     * "Camiseta ×2, Jean ×1". Si hay más de 3 líneas distintas, corta y añade
+     * "+N más". Requiere `lineas.variante.producto` cargada (el listado la trae
+     * con eager loading para no incurrir en N+1).
+     */
+    public function resumenProductos(int $limite = 3): string
+    {
+        $items = $this->lineas->map(
+            fn (VentaLinea $linea) => $linea->variante->producto->nombre.' ×'.$linea->cantidad,
+        );
+
+        if ($items->count() <= $limite) {
+            return $items->implode(', ');
+        }
+
+        return $items->take($limite)->implode(', ').' +'.($items->count() - $limite).' más';
+    }
+
+    /**
      * Movimientos de inventario originados por esta venta (venta y, si se anula,
      * anulacion).
      *

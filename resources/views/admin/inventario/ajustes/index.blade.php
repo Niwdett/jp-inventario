@@ -8,6 +8,7 @@
         </x-slot>
 
         @include('admin.inventario._nav')
+        @include('admin.inventario._buscador')
 
         <x-card flush>
             <x-table>
@@ -31,15 +32,23 @@
                         <td class="px-5 py-3 text-ink-soft">{{ $ajuste->motivo ?: '—' }}</td>
                     </tr>
                 @empty
-                    <x-table-empty :colspan="5" icon="ajuste" :title="__('Aún no hay ajustes registrados')">
-                        {{ __('Usa un ajuste cuando el conteo físico no coincida con el stock del sistema.') }}
-                        <x-slot:actions>
-                            <x-button size="sm" :href="route('admin.inventario.ajustes.create')">
-                                <x-icon name="ajuste" class="size-4" />
-                                {{ __('Ajustar inventario') }}
-                            </x-button>
-                        </x-slot:actions>
-                    </x-table-empty>
+                    @if ($buscar !== '')
+                        <x-table-empty :colspan="5" icon="buscar" :title="__('Ningún ajuste coincide con «:buscar»', ['buscar' => $buscar])">
+                            <x-slot:actions>
+                                <x-button variant="secondary" size="sm" :href="route('admin.inventario.ajustes.index')">{{ __('Ver todos') }}</x-button>
+                            </x-slot:actions>
+                        </x-table-empty>
+                    @else
+                        <x-table-empty :colspan="5" icon="ajuste" :title="__('Aún no hay ajustes registrados')">
+                            {{ __('Usa un ajuste cuando el conteo físico no coincida con el stock del sistema.') }}
+                            <x-slot:actions>
+                                <x-button size="sm" :href="route('admin.inventario.ajustes.create')">
+                                    <x-icon name="ajuste" class="size-4" />
+                                    {{ __('Ajustar inventario') }}
+                                </x-button>
+                            </x-slot:actions>
+                        </x-table-empty>
+                    @endif
                 @endforelse
             </x-table>
         </x-card>

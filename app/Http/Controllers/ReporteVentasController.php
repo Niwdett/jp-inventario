@@ -39,11 +39,21 @@ class ReporteVentasController extends Controller
             ->groupBy('metodo_pago')
             ->get();
 
+        // Detalle por día: además del recuento y el total, la lista de ventas
+        // de cada día para poder desplegarla en la vista.
         $porDia = $enPeriodo()
-            ->selectRaw('DATE(fecha_venta) as dia, COUNT(*) as ventas, COALESCE(SUM(total), 0) as total')
-            ->groupBy('dia')
-            ->orderBy('dia')
-            ->get();
+            ->with('cliente:id,nombre')
+            ->orderBy('fecha_venta')
+            ->orderBy('id')
+            ->get()
+            ->groupBy(fn (Venta $venta) => $venta->fecha_venta->toDateString())
+            ->map(fn ($ventas, string $dia) => [
+                'dia' => $dia,
+                'ventas' => $ventas->count(),
+                'total' => $ventas->reduce(fn (string $acumulado, Venta $venta) => bcadd($acumulado, (string) $venta->total, 2), '0'),
+                'detalle' => $ventas,
+            ])
+            ->values();
 
         $devoluciones = Devolucion::query()
             ->where('estado', EstadoDevolucion::Validada)

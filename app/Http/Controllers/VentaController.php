@@ -17,8 +17,10 @@ use App\Models\Venta;
 use App\Policies\VentaPolicy;
 use App\Services\Ventas\AnularVenta;
 use App\Services\Ventas\RegistrarVenta;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
@@ -36,14 +38,42 @@ class VentaController extends Controller
     {
         $this->authorize('viewAny', Venta::class);
 
-        $ventas = Venta::with(['cliente', 'usuario'])
+        $filtros = $request->validate([
+            'desde' => ['nullable', 'date'],
+            'hasta' => ['nullable', 'date', 'after_or_equal:desde'],
+            'buscar' => ['nullable', 'string', 'max:100'],
+        ]);
+
+        $buscar = trim($filtros['buscar'] ?? '');
+        // Solo los dígitos, para que "1", "V-1" o "000001" encuentren la venta "V-000001".
+        $numeroCanonico = ($digitos = preg_replace('/\D/', '', $buscar)) !== ''
+            ? sprintf('V-%06d', (int) $digitos)
+            : null;
+
+        $ventas = Venta::with(['cliente', 'usuario', 'lineas.variante.producto'])
             ->when(
                 $request->user()->esEmpleado(),
-                fn ($query) => $query->where('usuario_id', $request->user()->id),
+                fn (Builder $query) => $query->where('usuario_id', $request->user()->id),
             )
             ->when(
                 in_array($request->query('estado'), ['confirmada', 'anulada'], true),
-                fn ($query) => $query->where('estado', $request->query('estado')),
+                fn (Builder $query) => $query->where('estado', $request->query('estado')),
+            )
+            ->when(
+                ! empty($filtros['desde']),
+                fn (Builder $query) => $query->where('fecha_venta', '>=', Carbon::parse($filtros['desde'])->startOfDay()),
+            )
+            ->when(
+                ! empty($filtros['hasta']),
+                fn (Builder $query) => $query->where('fecha_venta', '<=', Carbon::parse($filtros['hasta'])->endOfDay()),
+            )
+            ->when(
+                $buscar !== '',
+                fn (Builder $query) => $query->where(function (Builder $query) use ($buscar, $numeroCanonico) {
+                    $query->where('numero', 'like', "%{$buscar}%")
+                        ->when($numeroCanonico, fn (Builder $query) => $query->orWhere('numero', $numeroCanonico))
+                        ->orWhereHas('cliente', fn (Builder $cliente) => $cliente->where('nombre', 'like', "%{$buscar}%"));
+                }),
             )
             ->latest('fecha_venta')
             ->latest('id')
@@ -59,6 +89,7 @@ class VentaController extends Controller
 
         return view('ventas.create', [
             'variantes' => Variante::opcionesParaSelect(),
+            'preciosReferencia' => Variante::preciosReferenciaPorId(),
             'metodosPago' => MetodoPago::cases(),
             'clientes' => Cliente::orderBy('nombre')->get(['id', 'nombre', 'cedula', 'saldo_favor']),
             'clientesEnMora' => Cliente::enMora()->pluck('id'),
