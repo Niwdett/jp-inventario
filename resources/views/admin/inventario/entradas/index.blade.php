@@ -9,13 +9,6 @@
 
         @include('admin.inventario._nav')
 
-        @if (session('status'))
-            <x-alert variant="success">{{ session('status') }}</x-alert>
-        @endif
-        @if (session('error'))
-            <x-alert variant="danger">{{ session('error') }}</x-alert>
-        @endif
-
         <x-card flush x-data="{ anulando: null }">
             <x-table>
                 <x-slot name="head">

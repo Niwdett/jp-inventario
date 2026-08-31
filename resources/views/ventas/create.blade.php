@@ -6,10 +6,6 @@
     <x-page :title="__('Registrar venta')">
         <x-card class="max-w-3xl">
 
-            @if (session('error'))
-                <x-alert variant="danger" class="mb-5">{{ session('error') }}</x-alert>
-            @endif
-
             <x-input-error :messages="$errors->get('lineas')" class="mb-5" />
 
             <form method="POST" action="{{ route('ventas.store') }}"

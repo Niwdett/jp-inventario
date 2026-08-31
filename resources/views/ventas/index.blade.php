@@ -16,13 +16,6 @@
             </x-button>
         </x-slot>
 
-        @if (session('status'))
-            <x-alert variant="success">{{ session('status') }}</x-alert>
-        @endif
-        @if (session('error'))
-            <x-alert variant="danger">{{ session('error') }}</x-alert>
-        @endif
-
         <div class="flex flex-wrap gap-1 rounded-lg border border-line bg-surface p-1 text-sm shadow-xs sm:w-fit">
             @foreach ($filtros as $valor => $etiqueta)
                 <a href="{{ route('ventas.index', $valor ? ['estado' => $valor] : []) }}"

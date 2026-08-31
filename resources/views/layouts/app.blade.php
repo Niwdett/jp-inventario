@@ -55,5 +55,6 @@
         </div>
 
         <x-confirm-modal />
+        <x-toaster />
     </body>
 </html>

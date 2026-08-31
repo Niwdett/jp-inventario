@@ -12,9 +12,6 @@
         </x-slot>
 
         <x-card class="max-w-3xl">
-            @if (session('error'))
-                <x-alert variant="danger" class="mb-5">{{ session('error') }}</x-alert>
-            @endif
             <x-input-error :messages="$errors->get('lineas')" class="mb-5" />
 
             <p class="mb-5 text-sm text-ink-soft">
