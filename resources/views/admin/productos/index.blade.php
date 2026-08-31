@@ -8,7 +8,7 @@
         </x-slot>
 
         <x-card flush>
-            <x-table>
+            <x-table stack>
                 <x-slot name="head">
                     <th class="px-5 py-3 font-medium">{{ __('Código') }}</th>
                     <th class="px-5 py-3 font-medium">{{ __('Producto') }}</th>
@@ -24,7 +24,7 @@
                         'hover:bg-surface-sunken/60' => ! $producto->trashed(),
                         'text-ink-faint' => $producto->trashed(),
                     ])>
-                        <td class="px-5 py-3 font-mono text-xs">{{ $producto->codigo_interno }}</td>
+                        <td class="px-5 py-3 font-mono text-xs" data-label="{{ __('Código') }}">{{ $producto->codigo_interno }}</td>
                         <td class="px-5 py-3">
                             <span class="font-medium {{ $producto->trashed() ? 'text-ink-faint' : 'text-ink' }}">{{ $producto->nombre }}</span>
                             @if ($producto->marca)
@@ -34,16 +34,18 @@
                                 <x-badge class="ml-1">{{ __('Eliminado') }}</x-badge>
                             @endif
                         </td>
-                        <td class="px-5 py-3 text-ink-soft">{{ $producto->categoria->nombre }}</td>
-                        <td class="px-5 py-3 text-right tabular-nums text-ink-soft">{{ number_format((float) $producto->precio_referencia, 2) }}</td>
-                        <td class="px-5 py-3 text-right">
-                            <span class="tabular-nums">{{ (int) $producto->stock_total }}</span>
-                            @if ($producto->variantes_bajas_count > 0 && ! $producto->trashed())
-                                <x-badge variant="warning" class="ml-1">{{ __('Stock bajo') }}</x-badge>
-                            @endif
+                        <td class="px-5 py-3 text-ink-soft" data-label="{{ __('Categoría') }}">{{ $producto->categoria->nombre }}</td>
+                        <td class="px-5 py-3 text-right tabular-nums text-ink-soft" data-label="{{ __('Precio ref.') }}">{{ number_format((float) $producto->precio_referencia, 2) }}</td>
+                        <td class="px-5 py-3 text-right" data-label="{{ __('Stock') }}">
+                            <span class="inline-flex items-center gap-1.5">
+                                <span class="tabular-nums">{{ (int) $producto->stock_total }}</span>
+                                @if ($producto->variantes_bajas_count > 0 && ! $producto->trashed())
+                                    <x-badge variant="warning">{{ __('Stock bajo') }}</x-badge>
+                                @endif
+                            </span>
                         </td>
                         <td class="px-5 py-3">
-                            <div class="flex items-center justify-end gap-1">
+                            <div class="flex items-center justify-end gap-1 max-sm:justify-start">
                                 @if ($producto->trashed())
                                     <form method="POST" action="{{ route('admin.productos.restore', $producto) }}">
                                         @csrf @method('PATCH')

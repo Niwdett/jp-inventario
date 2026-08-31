@@ -28,7 +28,7 @@
         </div>
 
         <x-card flush>
-            <x-table>
+            <x-table stack>
                 <x-slot name="head">
                     <th class="px-5 py-3 font-medium">{{ __('Número') }}</th>
                     <th class="px-5 py-3 font-medium">{{ __('Fecha') }}</th>
@@ -45,12 +45,12 @@
                             <a href="{{ route('ventas.show', $venta) }}"
                                class="font-mono text-sm font-medium text-primary-700 hover:text-primary-800">{{ $venta->numero }}</a>
                         </td>
-                        <td class="whitespace-nowrap px-5 py-3 text-ink-soft">{{ $venta->fecha_venta->format('Y-m-d H:i') }}</td>
-                        <td class="px-5 py-3 text-ink">{{ $venta->cliente?->nombre ?? '—' }}</td>
-                        <td class="px-5 py-3 text-ink-soft">{{ $venta->usuario->name }}</td>
-                        <td class="px-5 py-3 text-ink-soft">{{ $venta->metodo_pago->label() }}</td>
-                        <td class="px-5 py-3 text-right tabular-nums text-ink">{{ number_format((float) $venta->total, 2) }}</td>
-                        <td class="px-5 py-3">
+                        <td class="whitespace-nowrap px-5 py-3 text-ink-soft" data-label="{{ __('Fecha') }}">{{ $venta->fecha_venta->format('Y-m-d H:i') }}</td>
+                        <td class="px-5 py-3 text-ink" data-label="{{ __('Cliente') }}">{{ $venta->cliente?->nombre ?? '—' }}</td>
+                        <td class="px-5 py-3 text-ink-soft" data-label="{{ __('Vendedor') }}">{{ $venta->usuario->name }}</td>
+                        <td class="px-5 py-3 text-ink-soft" data-label="{{ __('Método') }}">{{ $venta->metodo_pago->label() }}</td>
+                        <td class="px-5 py-3 text-right tabular-nums text-ink" data-label="{{ __('Total') }}">{{ number_format((float) $venta->total, 2) }}</td>
+                        <td class="px-5 py-3" data-label="{{ __('Estado') }}">
                             @if ($venta->estado === \App\Enums\EstadoVenta::Anulada)
                                 <x-badge variant="danger">{{ __('Anulada') }}</x-badge>
                             @elseif ($venta->entregada_at)

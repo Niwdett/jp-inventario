@@ -8,7 +8,7 @@
         </x-slot>
 
         <x-card flush>
-            <x-table>
+            <x-table stack>
                 <x-slot name="head">
                     <th class="px-5 py-3 font-medium">{{ __('Nombre') }}</th>
                     <th class="px-5 py-3 font-medium">{{ __('Teléfono') }}</th>
@@ -28,13 +28,13 @@
                                 <a href="{{ route('admin.clientes.show', $cliente) }}" class="font-medium text-primary-700 hover:text-primary-800">{{ $cliente->nombre }}</a>
                             @endif
                         </td>
-                        <td class="px-5 py-3 text-ink-soft">{{ $cliente->telefono ?? '—' }}</td>
-                        <td class="px-5 py-3 font-mono text-xs text-ink-soft">{{ $cliente->cedula ?? '—' }}</td>
-                        <td class="px-5 py-3 text-right tabular-nums {{ (float) $cliente->saldo_favor > 0 ? 'text-success-700' : 'text-ink-soft' }}">
+                        <td class="px-5 py-3 text-ink-soft" data-label="{{ __('Teléfono') }}">{{ $cliente->telefono ?? '—' }}</td>
+                        <td class="px-5 py-3 font-mono text-xs text-ink-soft" data-label="{{ __('Cédula') }}">{{ $cliente->cedula ?? '—' }}</td>
+                        <td class="px-5 py-3 text-right tabular-nums {{ (float) $cliente->saldo_favor > 0 ? 'text-success-700' : 'text-ink-soft' }}" data-label="{{ __('Saldo a favor') }}">
                             {{ number_format((float) $cliente->saldo_favor, 2) }}
                         </td>
-                        <td class="px-5 py-3 text-right tabular-nums text-ink-soft">{{ $cliente->ventas_a_credito_count }}</td>
-                        <td class="px-5 py-3">
+                        <td class="px-5 py-3 text-right tabular-nums text-ink-soft" data-label="{{ __('Créditos abiertos') }}">{{ $cliente->ventas_a_credito_count }}</td>
+                        <td class="px-5 py-3" data-label="{{ __('Estado') }}">
                             @if ($cliente->trashed())
                                 <x-badge>{{ __('Eliminado') }}</x-badge>
                             @else
@@ -42,7 +42,7 @@
                             @endif
                         </td>
                         <td class="px-5 py-3">
-                            <div class="flex items-center justify-end gap-1">
+                            <div class="flex items-center justify-end gap-1 max-sm:justify-start">
                                 @if ($cliente->trashed())
                                     @can('restore', $cliente)
                                         <form method="POST" action="{{ route('admin.clientes.restore', $cliente) }}">
